@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나를 소개하는 한 페이지</title>
+  <style>
+    body {
+      margin: 0; padding: 0; box-sizing: border-box;
+      background-color: #05050a;
+      color: #e0e6ed; 
+      font-family: 'Pretendard', 'Segoe UI', Tahoma, sans-serif;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before, body::after {
+      content: ""; position: fixed;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      filter: blur(100px); 
+      z-index: -1;
+      animation: floatLight 15s infinite alternate ease-in-out;
+    }
+    
+    body::before { top: -100px; left: -100px; background: rgba(0, 229, 255, 0.2); }
+    body::after { bottom: -100px; right: -100px; background: rgba(177, 72, 210, 0.2); animation-delay: -5s; }
+
+    @keyframes floatLight {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(100px, 50px) scale(1.2); }
+      100% { transform: translate(-50px, 100px) scale(0.9); }
+    }
+
+    .container {
+      max-width: 1200px; margin: 0 auto; min-height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: center; padding: 20px; box-sizing: border-box;
+    }
+
+    header { margin-bottom: 2rem; text-align: center; height: 100px; }
+    .typing-container { display: inline-block; }
+
+    .typing-text {
+      font-size: 2.2rem; color: #00e5ff; 
+      text-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
+      margin-bottom: 0.5rem; overflow: hidden;
+      white-space: nowrap; border-right: 3px solid #00e5ff; 
+    }
+
+    .type-animation { animation: typing 2.5s steps(30, end) forwards, blink 0.75s step-end infinite; }
+    .delete-animation { animation: deleting 1s steps(30, end) forwards, blink 0.75s step-end infinite; }
+
+    @keyframes typing { from { width: 0; } to { width: 100%; } }
+    @keyframes deleting { from { width: 100%; } to { width: 0; } }
+    @keyframes blink { from, to { border-color: transparent; } 50% { border-color: #00e5ff; } }
+
+    .purpose-text {
+      font-size: 1.1rem; color: #a0aec0; font-weight: 600; margin-top: 10px;
+      transition: opacity 1s;
+    }
+
+    .main-content { display: flex; gap: 30px; align-items: stretch; }
+    .left-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    .right-panel { flex: 2; display: flex; gap: 15px; }
+
+    .glass-panel {
+      background: rgba(25, 27, 40, 0.5);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: 12px;
+    }
+
+    .tmi-section { 
+      padding: 20px; 
+      border: 2px solid rgba(177, 72, 210, 0.5); 
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 15px rgba(177, 72, 210, 0.2);
+    }
+    
+    .tmi-section h2 { 
+      font-size: 1.25rem; margin-top: 0; margin-bottom: 15px; 
+      color: #b148d2; text-shadow: 0 0 10px rgba(177, 72, 210, 0.6);
+    }
+    
+    details { 
+      margin-bottom: 10px; background-color: rgba(0,0,0, 0.3); 
+      border-radius: 6px; padding: 5px;
+      border-left: 3px solid #00e5ff; transition: background-color 0.3s;
+    }
+    details:hover { background-color: rgba(0,0,0, 0.5); }
+    summary { font-weight: bold; cursor: pointer; padding: 10px; list-style: none; position: relative; color: #ffffff;}
+    summary::after { content: '▼'; position: absolute; right: 15px; color: #00e5ff; }
+    details[open] summary::after { content: '▲'; }
+    details p { padding: 15px 10px 10px 10px; margin: 0; font-size: 0.95rem; line-height: 1.5; color: #a0aec0;}
+
+    summary:focus { outline: 2px solid #ff00ff; outline-offset: 2px; border-radius: 4px; }
+    .cyber-btn:focus, .flip-card:focus { outline: 3px solid #ff00ff; outline-offset: 3px; }
+
+    .cyber-btn {
+      position: relative; padding: 16px; font-size: 1.1rem; font-weight: bold; 
+      background: rgba(0, 229, 255, 0.05); backdrop-filter: blur(4px);
+      color: #00e5ff; border: 2px solid #00e5ff; border-radius: 8px; cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 229, 255, 0.2), inset 0 0 10px rgba(0, 229, 255, 0.1);
+      transition: all 0.3s ease; width: 100%; overflow: hidden;
+    }
+    
+    .cyber-btn:hover { 
+      background-color: #00e5ff; color: #090a0f; 
+      transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 229, 255, 0.5);
+    }
+    .cyber-btn:hover::before {
+      content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: #00e5ff; color: #090a0f; display: flex; align-items: center; justify-content: center;
+      text-shadow: 2px 0 #b148d2, -2px 0 #39ff14; animation: glitch-effect 0.3s infinite; z-index: 1;
+    }
+    @keyframes glitch-effect {
+      0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); }
+      20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); }
+      40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); }
+      60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
+      80% { clip-path: inset(10% 0 70% 0); transform: translate(-1px, 1px); }
+      100% { clip-path: inset(30% 0 50% 0); transform: translate(1px, -1px); }
+    }
+
+    .flip-card { background-color: transparent; width: 100%; height: 280px; perspective: 1000px; cursor: pointer; }
+    .flip-card-inner {
+      position: relative; width: 100%; height: 100%; text-align: left;
+      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d;
+    }
+    .flip-card:hover .flip-card-inner, .flip-card:focus .flip-card-inner { transform: rotateY(180deg); }
+    
+    .flip-card-front, .flip-card-back {
+      position: absolute; width: 100%; height: 100%;
+      -webkit-backface-visibility: hidden; backface-visibility: hidden;
+      padding: 20px; box-sizing: border-box;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    
+    .flip-card-front { 
+      align-items: center; 
+      border: 2px solid rgba(0, 229, 255, 0.5); 
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 229, 255, 0.2);
+    }
+    .flip-card-front h2 { font-size: 1.4rem; color: #00e5ff; text-align: center; margin-bottom: 10px; }
+    .flip-card-front .hint { 
+      font-size: 0.85rem; color: #00e5ff; margin-top: 20px; 
+      background-color: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3);
+      padding: 5px 12px; border-radius: 20px; 
+    }
+    
+    .flip-card-back { 
+      border: 2px solid rgba(177, 72, 210, 0.6); 
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 15px rgba(177, 72, 210, 0.25);
+      transform: rotateY(180deg); 
+    }
+    .flip-card-back p { margin: 8px 0; font-size: 0.95rem; line-height: 1.5; color: #e0e6ed;}
+    .flip-card-back strong { color: #b148d2; text-shadow: 0 0 5px rgba(177, 72, 210, 0.5); }
+
+    /* 영상 모달 */
+    #video-modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.85); z-index: 1000;
+      align-items: center; justify-content: center; flex-direction: column;
+    }
+    
+    /* 💡 9:16 영상에 맞춰 모달창 폭과 스크롤 방지 설정 추가 */
+    #video-modal .modal-content { 
+      padding: 30px; text-align: center; 
+      max-width: 500px; /* 세로 영상이 예쁘게 담기도록 폭을 살짝 줄임 */
+      width: 90%; 
+      max-height: 90vh; /* 화면 높이를 넘어가지 않도록 강제 제한 */
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 2px solid rgba(0, 229, 255, 0.5);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 229, 255, 0.3);
+    }
+    #video-modal h2 { color: #00e5ff; margin-top: 0; margin-bottom: 20px;}
+
+    /* 💡 핵심 수정: 영상 높이를 제한하여 꽉 차지 않게 함 */
+    video {
+      width: 100%; 
+      max-height: 55vh; /* 화면 전체 높이의 55% 까지만 커지도록 제한 */
+      object-fit: contain; /* 비율이 찌그러지지 않고 박스 안에 예쁘게 맞춤 */
+      border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background-color: #000; outline: none;
+    }
+
+    .close-btn { 
+      font-weight: bold; margin-top: 20px; width: auto; padding: 10px 24px; 
+      background: rgba(255, 0, 85, 0.1); border: 1px solid #ff0055; color: #ff0055; 
+      border-radius: 6px; cursor: pointer; transition: 0.2s;
+    }
+    .close-btn:hover { background-color: #ff0055; color: white; box-shadow: 0 0 20px rgba(255, 0, 85, 0.6); }
+
+    /* 접근성 (T01-C22) */
+    @media (prefers-reduced-motion: reduce) {
+      body::before, body::after { animation: none; }
+      .cyber-btn:hover::before { animation: none; content: none; }
+      .type-animation, .delete-animation { animation: none; white-space: normal; border: none; }
+      .typing-text { width: 100%; border: none; }
+      .flip-card-inner { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="typing-container">
+        <h1 class="typing-text type-animation" id="main-title">나는 고민이 생기면 먼저 움직이는 사람입니다.</h1>
+      </div>
+      <p class="purpose-text" id="sub-title">나에 대해 더 알고 싶다면 우측의 카드 3장을 모두 뒤집어보세요!</p>
+    </header>
+
+    <main class="main-content">
+      <section class="left-panel">
+        <div class="tmi-section glass-panel">
+          <h2>TMI: 저를 더 알고 싶다면?</h2>
+          <details>
+            <summary>🎬 좋아하는 영화와 게임은?</summary>
+            <p>화려한 시각적 연출이 돋보이는 영화와 스토리텔링이 탄탄한 게임을 즐깁니다. 이런 취미에서 얻은 영감을 바탕으로 숏폼 콘텐츠를 기획하곤 합니다.</p>
+          </details>
+          <details>
+            <summary>🤝 고민 상담을 할 때 나의 철칙은?</summary>
+            <p>섣불리 해결책을 제시하기보다는, 상대방의 이야기가 끝날 때까지 온전히 경청하고 수용하는 것을 가장 중요하게 생각합니다.</p>
+          </details>
+          <details>
+            <summary>🤖 요즘 가장 몰입하고 있는 것은?</summary>
+            <p>최신 AI 툴을 활용해 대본을 쓰고 목소리를 입혀 짧은 동영상을 만드는 것에 푹 빠져 있습니다. 실행력이 제 무기죠!</p>
+          </details>
+        </div>
+
+        <button id="video-btn" class="cyber-btn" data-text="▶️ 직접 만든 AI 영상 재생하기" aria-expanded="false">▶️ 직접 만든 AI 영상 재생하기</button>
+      </section>
+
+      <section class="right-panel">
+        <article class="flip-card card-item" tabindex="0" data-index="1" aria-label="빠른 실행력 카드">
+          <div class="flip-card-inner">
+            <div class="flip-card-front glass-panel">
+              <h2>🚀<br>빠른 실행력</h2><span class="hint">마우스를 올려보세요</span>
+            </div>
+            <div class="flip-card-back glass-panel">
+              <p><strong>상황:</strong> 확실한 동기나 목표가 생겼을 때</p>
+              <p><strong>행동:</strong> 머릿속에만 두지 않고, 필요한 것을 즉시 시도함</p>
+              <p><strong>결과:</strong> 단기간에 집중하여 구체적인 결과물을 만들어냄</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="flip-card card-item" tabindex="0" data-index="2" aria-label="경청과 수용 카드">
+          <div class="flip-card-inner">
+            <div class="flip-card-front glass-panel">
+              <h2>🤝<br>경청과 수용</h2><span class="hint">마우스를 올려보세요</span>
+            </div>
+            <div class="flip-card-back glass-panel">
+              <p><strong>상황:</strong> 동료들이 고민이 있거나 문제 해결이 필요할 때</p>
+              <p><strong>행동:</strong> 이야기를 끝까지 경청하고, 피드백을 수용함</p>
+              <p><strong>결과:</strong> 원활한 대화를 통해 긍정적인 결론을 함께 도출함</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="flip-card card-item" tabindex="0" data-index="3" aria-label="AI 영상 제작 카드">
+          <div class="flip-card-inner">
+            <div class="flip-card-front glass-panel">
+              <h2>🎮<br>영화, 게임, AI</h2><span class="hint">마우스를 올려보세요</span>
+            </div>
+            <div class="flip-card-back glass-panel">
+              <p><strong>상황:</strong> 영화나 게임에서 시각적인 영감을 받았을 때</p>
+              <p><strong>행동:</strong> AI 도구를 활용해 목소리를 입히고 영상을 기획함</p>
+              <p><strong>결과:</strong> 나만의 아이디어가 담긴 숏폼 영상을 직접 제작함</p>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div id="video-modal" aria-hidden="true" role="dialog">
+    <div class="modal-content glass-panel">
+      <h2>직접 만든 AI 영상</h2>
+      <video id="my-video" controls>
+        <source src="my_video.mp4" type="video/mp4">
+        브라우저가 동영상 재생을 지원하지 않습니다.
+      </video>
+      <!-- 불필요한 줄바꿈 <br> 제거하고 간격은 CSS(margin-top)로 처리했습니다. -->
+      <button class="close-btn" id="close-modal-btn">닫기</button>
+    </div>
+  </div>
+
+  <script>
+    const cards = document.querySelectorAll('.card-item');
+    const mainTitle = document.getElementById('main-title');
+    const subTitle = document.getElementById('sub-title');
+    const viewedCards = new Set();
+    let isRevealed = false;
+
+    function checkCards(event) {
+      if (isRevealed) return; 
+      const cardIndex = event.currentTarget.getAttribute('data-index');
+      viewedCards.add(cardIndex);
+
+      if (viewedCards.size === 3) {
+        isRevealed = true;
+        mainTitle.classList.remove('type-animation');
+        mainTitle.classList.add('delete-animation');
+        subTitle.style.opacity = '0'; 
+
+        setTimeout(() => {
+          mainTitle.style.color = '#b148d2';
+          mainTitle.style.textShadow = '0 0 10px rgba(177, 72, 210, 0.7)';
+          mainTitle.style.borderRightColor = '#b148d2';
+          mainTitle.textContent = "안녕하세요, 박상준입니다.";
+          mainTitle.classList.remove('delete-animation');
+          void mainTitle.offsetWidth; 
+          mainTitle.classList.add('type-animation');
+          
+          setTimeout(() => {
+            subTitle.textContent = "저의 페이지를 끝까지 탐구해 주셔서 감사합니다.";
+            subTitle.style.opacity = '1';
+          }, 1000);
+        }, 1000);
+      }
+    }
+
+    cards.forEach(card => {
+      card.addEventListener('mouseenter', checkCards);
+      card.addEventListener('focus', checkCards);
+    });
+
+    const videoBtn = document.getElementById('video-btn');
+    const modal = document.getElementById('video-modal');
+    const closeBtn = document.getElementById('close-modal-btn');
+    const videoPlayer = document.getElementById('my-video');
+
+    videoBtn.addEventListener('click', () => { modal.style.display = 'flex'; closeBtn.focus(); });
+    closeBtn.addEventListener('click', () => { modal.style.display = 'none'; videoPlayer.pause(); videoBtn.focus(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.style.display === 'flex') { closeBtn.click(); }});
+  </script>
+</body>
+</html>
