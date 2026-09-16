@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>몰래 먹방 게임 (완성본)</title>
+  <style>
+    body {
+      margin: 0; padding: 0; background-color: #2b1d14; color: #333;
+      font-family: 'Pretendard', 'Comic Sans MS', sans-serif; 
+      display: flex; flex-direction: column; align-items: center; justify-content: center; 
+      min-height: 100vh; overflow: hidden;
+    }
+    
+    #game-container {
+      width: 800px; height: 600px; 
+      background: linear-gradient(to bottom, #fff9c4 0%, #fff9c4 55%, #a1887f 55%, #8d6e63 100%);
+      position: relative; overflow: hidden;
+      border: 8px solid #4e342e; border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
+
+    #wall-clock {
+      position: absolute; top: 15px; right: 20px; width: 50px; height: 50px; background-color: white;
+      border: 5px solid #333; border-radius: 50%; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); z-index: 1;
+      display: flex; justify-content: center; align-items: center;
+    }
+    #wall-clock::before { content: ''; position: absolute; width: 4px; height: 20px; background: #333; top: 5px; border-radius: 2px; }
+    #wall-clock::after { content: ''; position: absolute; width: 15px; height: 4px; background: #e53935; right: 8px; border-radius: 2px; }
+
+    /* 상단 UI 배치를 살짝 조정했습니다 */
+    #status-bar {
+      position: absolute; top: 15px; left: 20px; z-index: 10;
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .info-box {
+      background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 8px;
+      color: white; font-weight: bold; font-size: 1.1rem; border: 2px solid rgba(255,255,255,0.3);
+    }
+    .info-box span { color: #ffeb3b; font-size: 1.3rem; }
+    
+    /* 효과 끄기 설정 (접근성) */
+    #settings-box {
+      background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 6px;
+      font-size: 0.9rem; font-weight: bold; border: 2px solid #333; display: flex; align-items: center; gap: 5px; cursor: pointer;
+    }
+    #settings-box input { cursor: pointer; width: 16px; height: 16px; }
+
+    #best-record { color: #00e5ff; margin-left: 10px; padding-left: 10px; border-left: 2px solid rgba(255,255,255,0.3); }
+
+    #chalkboard-wrapper { position: absolute; top: 80px; left: 10%; width: 80%; z-index: 2; }
+    #chalkboard {
+      width: 100%; height: 160px; background-color: #1b5e20; border: 8px solid #5d4037; border-radius: 6px;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.7), 0 5px 10px rgba(0,0,0,0.3);
+      display: flex; padding: 15px; box-sizing: border-box; color: white;
+    }
+    #chalk-tray {
+      width: 102%; height: 12px; background-color: #4e342e; margin-left: -1%; border-radius: 0 0 5px 5px;
+      position: relative; box-shadow: 0 5px 5px rgba(0,0,0,0.4);
+    }
+    #chalk-tray::before { content: ''; position: absolute; left: 20%; top: -5px; width: 30px; height: 10px; background: #ffeb3b; border-radius: 2px; }
+
+    .chalk-math { margin-right: auto; opacity: 0.85; font-size: 1.4rem; line-height: 1.4; }
+    .chalk-warn { margin-left: auto; text-align: right; color: #ffab00; font-size: 1.2rem; }
+
+    #teacher-desk {
+      width: 280px; height: 100px; background-color: #6d4c41; border: 5px solid #3e2723; border-radius: 5px;
+      position: absolute; top: 300px; left: 50%; transform: translateX(-50%);
+      box-shadow: 0 15px 15px rgba(0,0,0,0.5); z-index: 4; display: flex; justify-content: center; padding-top: 10px;
+    }
+    #teacher-desk::before {
+      content: ''; width: 80px; height: 15px; background: #1976d2; border-radius: 2px; border-bottom: 3px solid #fff; transform: skewX(-20deg);
+    }
+
+    #teacher {
+      position: absolute; top: 130px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; z-index: 3;
+    }
+    #t-body {
+      width: 140px; height: 140px; background-color: #37474f; border: 4px solid #1a232e; border-radius: 70px 70px 10px 10px; z-index: 1; position: relative; display: flex; justify-content: center;
+    }
+    #t-tie { width: 15px; height: 60px; background-color: #e53935; position: absolute; top: 0; clip-path: polygon(0 0, 100% 0, 50% 100%); display: none; }
+    #t-head {
+      width: 90px; height: 90px; border-radius: 50%; background-color: #212121; border: 4px solid #000; position: relative; z-index: 2; margin-bottom: -20px;
+      display: flex; align-items: center; justify-content: center; transition: all 0.1s; overflow: hidden;
+    }
+    #t-face {
+      width: 100%; height: 100%; background-color: #ffccbc; display: none; flex-direction: column; align-items: center; justify-content: center; font-size: 2.2rem; line-height: 1;
+    }
+    #t-face::before { content: '👓'; position: absolute; top: 15px; font-size: 3rem; opacity: 0.8; }
+    
+    #alert-mark {
+      position: absolute; top: -65px; font-size: 4.5rem; color: #ff1744; font-weight: bold; text-shadow: 3px 3px 0 #fff;
+      display: none; animation: pop 0.4s infinite alternate;
+    }
+
+    #classroom-back { position: absolute; bottom: 80px; width: 100%; display: flex; justify-content: space-evenly; align-items: flex-end; z-index: 5; }
+    
+    #huge-food {
+      position: absolute; top: -80px; left: 50%; transform: translateX(-50%) scale(0); font-size: 4.5rem; z-index: 20; 
+      transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-shadow: 0 10px 20px rgba(0,0,0,0.5); filter: drop-shadow(0 0 10px rgba(255, 235, 59, 0.8));
+    }
+    #huge-food.show { transform: translateX(-50%) scale(1); animation: float 1s infinite alternate; }
+
+    .student { display: flex; flex-direction: column; align-items: center; position: relative; }
+    .s-head {
+      width: 75px; height: 75px; background-color: #ffe0b2; border: 3px solid #000; border-radius: 50%; z-index: 2;
+      display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin-bottom: -15px;
+    }
+    .s-body { width: 110px; height: 80px; border: 3px solid #000; border-radius: 55px 55px 0 0; z-index: 1; }
+    
+    .npc-left .s-body { background-color: #43a047; }
+    .npc-right .s-body { background-color: #8e24aa; }
+    #player .s-body { background-color: #f57c00; }
+
+    #player-status-text {
+      position: absolute; top: -110px; background: rgba(0,0,0,0.8); color: white; padding: 6px 15px; border-radius: 20px; font-weight: bold; white-space: nowrap; border: 2px solid #fff; z-index: 10; font-size: 1.1rem;
+    }
+
+    #students-desk {
+      width: 100%; height: 140px; background-color: #5d4037; border-top: 8px solid #3e2723; position: absolute; bottom: 0; left: 0; z-index: 6;
+      box-shadow: inset 0 20px 20px rgba(0,0,0,0.4); display: flex; justify-content: space-evenly; padding-top: 15px;
+    }
+    .notebook { width: 70px; height: 45px; background: #fff; border: 3px solid #b0bec5; border-radius: 4px; transform: skewX(-15deg); }
+    .notebook::before { content: ''; position: absolute; left: 10px; top: 10px; width: 40px; height: 3px; background: #90a4ae; box-shadow: 0 8px 0 #90a4ae, 0 16px 0 #90a4ae; }
+
+    #gauge-container {
+      position: absolute; right: 20px; top: 150px; width: 40px; height: 280px; background-color: #fff; border: 5px solid #333; border-radius: 8px; z-index: 10;
+      display: flex; align-items: flex-end; box-shadow: 5px 5px 0px rgba(0,0,0,0.5);
+    }
+    #eat-gauge { width: 100%; height: 0%; background: linear-gradient(to top, #ff3d00, #ffea00); transition: height 0.05s linear; }
+    #gauge-container::after { content: 'MAX'; position: absolute; top: -35px; left: -12px; font-size: 1.3rem; font-weight: bold; color: white; text-shadow: 2px 2px 0 black; }
+
+    #overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 30;
+    }
+    #overlay h1 { font-size: 3rem; margin-bottom: 15px; color: #ffeb3b; text-shadow: 4px 4px 0 #d84315; }
+    #overlay p { font-size: 1.4rem; margin-bottom: 35px; color: white; text-align: center; line-height: 1.6; }
+    #overlay button {
+      padding: 15px 50px; font-size: 1.5rem; font-weight: bold; cursor: pointer; border: 4px solid #fff; border-radius: 40px; background-color: #ff9800; color: #fff; 
+      text-shadow: 2px 2px 0 #000; box-shadow: 0 6px 0 #e65100; transition: 0.1s;
+    }
+    #overlay button:active { transform: translateY(6px); box-shadow: 0 0 0 #e65100; }
+
+    @keyframes pop { from { transform: translateY(0) scale(1); } to { transform: translateY(-15px) scale(1.2); } }
+    @keyframes float { from { transform: translateX(-50%) translateY(0) scale(1); } to { transform: translateX(-50%) translateY(-10px) scale(1.05); } }
+    @keyframes shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-4px, -4px); } 50% { transform: translate(4px, 0px); } 75% { transform: translate(-4px, 4px); } }
+    .shaking { animation: shake 0.15s infinite; }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <div id="wall-clock"></div>
+
+    <div id="status-bar">
+      <div class="info-box">
+        ⏱ <span id="time-left">30</span>초 &nbsp;|&nbsp; ⭐ 현재: <span id="level">1</span>단계 <span id="best-record">🏆 최고: <span id="best-level-display">1</span>단계</span>
+      </div>
+      <!-- T02-C26, C27: 효과 선택권 추가 -->
+      <label id="settings-box">
+        <input type="checkbox" id="reduce-motion"> 📳 화면 흔들림 효과 끄기
+      </label>
+    </div>
+
+    <div id="chalkboard-wrapper">
+      <div id="chalkboard">
+        <div class="chalk-math">1교시: 몰래 먹방의 이해<br>🔥 30초 생존 미션 🔥</div>
+        <div class="chalk-warn">오늘의 타겟:<br>박상준</div>
+      </div>
+      <div id="chalk-tray"></div>
+    </div>
+
+    <div id="teacher-desk"></div>
+
+    <div id="teacher">
+      <div id="alert-mark">❓</div>
+      <div id="t-head"><div id="t-face">😠</div></div> 
+      <div id="t-body"><div id="t-tie"></div></div>
+    </div>
+
+    <div id="gauge-container"><div id="eat-gauge"></div></div>
+
+    <div id="classroom-back">
+      <div class="student npc-left"><div class="s-head">👦</div><div class="s-body"></div></div>
+      <div class="student" id="player">
+        <div id="player-status-text">딴청 피우기 (Space)</div>
+        <div id="huge-food">🍔</div>
+        <div class="s-head" id="player-emoji">😐</div>
+        <div class="s-body"></div>
+      </div>
+      <div class="student npc-right"><div class="s-head">👧</div><div class="s-body"></div></div>
+    </div>
+
+    <div id="students-desk">
+      <div class="notebook"></div><div class="notebook"></div><div class="notebook"></div>
+    </div>
+
+    <div id="overlay">
+      <h1 id="overlay-title">강의실 몰래 먹방 😋</h1>
+      <p id="overlay-desc">선생님이 칠판을 볼 때 스페이스바를 꾹 눌러 간식을 드세요!<br>화면 상단에 거대한 음식이 나타납니다!</p>
+      <button id="start-btn">게임 시작</button>
+    </div>
+  </div>
+
+  <script>
+    // --- 효과 선택권 로직 (T02-C26, C27) ---
+    const reduceMotionToggle = document.getElementById('reduce-motion');
+    
+    // 플레이 도중 체크박스를 누르면 즉시 효과가 멈춤
+    reduceMotionToggle.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        player.classList.remove('shaking');
+      } else if (isEating && !isPaused) {
+        player.classList.add('shaking');
+      }
+    });
+
+    // --- 데이터 저장 및 복구 로직 (T02-C22 ~ C25) ---
+    const STORAGE_KEY = 'super_secret_eat_record';
+    let bestLevel = 1;
+
+    function loadRecord() {
+      try {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        if (!savedData) return 1; 
+        const parsed = JSON.parse(savedData);
+        if (typeof parsed.maxLevel !== 'number') throw new Error('데이터 손상됨'); 
+        return parsed.maxLevel;
+      } catch (e) {
+        localStorage.removeItem(STORAGE_KEY);
+        return 1; 
+      }
+    }
+
+    function saveRecord(currentLevel) {
+      if (currentLevel > bestLevel) {
+        bestLevel = currentLevel;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ maxLevel: bestLevel }));
+        document.getElementById('best-level-display').textContent = bestLevel;
+      }
+    }
+
+    bestLevel = loadRecord();
+    document.getElementById('best-level-display').textContent = bestLevel;
+
+    // --- 게임 기본 변수 ---
+    let isPlaying = false, isEating = false, isPaused = false;
+    let timeLeft = 30, level = 1, score = 0, eatProgress = 0, teacherState = 'SAFE'; 
+    let gameInterval = null, eatInterval = null, teacherTimeout = null;
+
+    const timeEl = document.getElementById('time-left'), levelEl = document.getElementById('level');
+    const tHead = document.getElementById('t-head'), tFace = document.getElementById('t-face'), tTie = document.getElementById('t-tie'), alertMark = document.getElementById('alert-mark');
+    const player = document.getElementById('player'), playerEmoji = document.getElementById('player-emoji'), playerStatusText = document.getElementById('player-status-text'), hugeFood = document.getElementById('huge-food'), eatGauge = document.getElementById('eat-gauge');
+    const overlay = document.getElementById('overlay'), overlayTitle = document.getElementById('overlay-title'), overlayDesc = document.getElementById('overlay-desc'), startBtn = document.getElementById('start-btn');
+
+    const foodList = ["🍬", "🍪", "🍩", "🥪", "🌭", "🍔", "🍕", "🍗", "🍜", "🦞"];
+
+    function clearAllTimers() { clearInterval(gameInterval); clearInterval(eatInterval); clearTimeout(teacherTimeout); }
+
+    function startGame() {
+      clearAllTimers(); 
+      isPlaying = true; isPaused = false; isEating = false;
+      
+      timeLeft = 30; level = 1; score = 0; eatProgress = 0;
+      levelEl.textContent = level; timeEl.textContent = timeLeft;
+      eatGauge.style.height = '0%'; hugeFood.classList.remove('show');
+      overlay.style.display = 'none';
+      
+      gameInterval = setInterval(() => {
+        if(isPaused) return;
+        timeLeft--; timeEl.textContent = timeLeft;
+        if (timeLeft <= 0) gameWin();
+      }, 1000);
+      setTeacherSafe();
+    }
+
+    function setTeacherSafe() {
+      if (!isPlaying || isPaused) return;
+      teacherState = 'SAFE';
+      tFace.style.display = 'none'; tTie.style.display = 'none'; tHead.style.backgroundColor = '#212121'; alertMark.style.display = 'none';
+      let safeTime = Math.random() * 2000 + 1500;
+      teacherTimeout = setTimeout(setTeacherWarn, safeTime);
+    }
+
+    function setTeacherWarn() {
+      if (!isPlaying || isPaused) return;
+      teacherState = 'WARN';
+      alertMark.textContent = '❓'; alertMark.style.display = 'block'; alertMark.style.color = '#ffab00';
+      teacherTimeout = setTimeout(setTeacherDanger, 800); 
+    }
+
+    function setTeacherDanger() {
+      if (!isPlaying || isPaused) return;
+      teacherState = 'DANGER';
+      alertMark.textContent = '❗'; alertMark.style.color = '#ff1744';
+      tHead.style.backgroundColor = '#ffccbc'; tFace.style.display = 'flex'; tTie.style.display = 'block';
+      if (isEating) gameOver();
+      let dangerTime = Math.random() * 1000 + 1000;
+      teacherTimeout = setTimeout(setTeacherSafe, dangerTime);
+    }
+
+    function startEating() {
+      if (isEating || !isPlaying || isPaused) return;
+      isEating = true;
+      let currentFood = foodList[Math.min(level - 1, foodList.length - 1)];
+      hugeFood.textContent = currentFood; hugeFood.classList.add('show');
+      playerEmoji.textContent = `😋`; 
+      
+      // 체크박스가 꺼져 있을 때만 화면 흔들림 효과 적용
+      if (!reduceMotionToggle.checked) {
+        player.classList.add('shaking'); 
+      }
+      
+      playerStatusText.textContent = `폭풍 흡입 중!`; playerStatusText.style.color = '#ffeb3b';
+      if (teacherState === 'DANGER') { gameOver(); return; }
+
+      eatInterval = setInterval(() => {
+        if(isPaused) return;
+        eatProgress += 2.5; eatGauge.style.height = eatProgress + '%';
+        if (eatProgress >= 100) {
+          score++; level++; levelEl.textContent = level; eatProgress = 0; 
+          currentFood = foodList[Math.min(level - 1, foodList.length - 1)];
+          hugeFood.textContent = currentFood; 
+        }
+      }, 30);
+    }
+
+    function stopEating() {
+      if (!isEating || !isPlaying || isPaused) return;
+      isEating = false; clearInterval(eatInterval);
+      hugeFood.classList.remove('show'); playerEmoji.textContent = '😐'; player.classList.remove('shaking');
+      playerStatusText.textContent = '딴청 피우기 (Space)'; playerStatusText.style.color = 'white';
+    }
+
+    function gameOver() {
+      isPlaying = false; clearAllTimers();
+      hugeFood.classList.remove('show'); playerEmoji.textContent = '😱'; player.classList.remove('shaking');
+      saveRecord(level); 
+      overlayTitle.textContent = "💥 선생님과 눈이 마주쳤습니다! 💥";
+      overlayDesc.textContent = `최종 달성 레벨: ${level}단계\n아쉽지만 이번엔 실패입니다.`;
+      startBtn.textContent = "다시 도전하기"; overlay.style.display = 'flex';
+    }
+
+    function gameWin() {
+      isPlaying = false; clearAllTimers();
+      hugeFood.classList.remove('show'); playerEmoji.textContent = '😎'; player.classList.remove('shaking');
+      saveRecord(level); 
+      overlayTitle.textContent = "🎉 완전 범죄 성공! 🎉";
+      overlayDesc.textContent = `놀라운 순발력입니다!\n최종 달성 레벨: ${level}단계`;
+      startBtn.textContent = "다시 도전하기"; overlay.style.display = 'flex';
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') { e.preventDefault(); if (!e.repeat && isPlaying && !isPaused) startEating(); }
+    });
+    window.addEventListener('keyup', (e) => { if (e.code === 'Space' && isPlaying && !isPaused) stopEating(); });
+    window.addEventListener('blur', () => {
+      if (isPlaying && !isPaused) {
+        isPaused = true; stopEating(); overlayTitle.textContent = "⏸️ 일시 정지";
+        overlayDesc.textContent = "화면 밖을 클릭하여 게임이 안전하게 멈췄습니다."; startBtn.textContent = "계속하기";
+        overlay.style.display = 'flex'; clearTimeout(teacherTimeout);
+      }
+    });
+    startBtn.addEventListener('click', () => {
+      if (isPaused) { isPaused = false; overlay.style.display = 'none'; setTeacherSafe(); } 
+      else { startGame(); }
+    });
+  </script>
+</body>
+</html>
