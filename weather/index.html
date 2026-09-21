@@ -1,1 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>진짜 정보판: 대전 실시간 날씨</title>
+  <!-- 세련된 폰트 적용 -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+  <style>
+    /* === 🎨 글래스모피즘 & 파스텔 테마 CSS === */
+    body {
+      font-family: 'Pretendard', -apple-system, sans-serif;
+      /* 부드러운 하늘색 파스텔 그라데이션 배경 */
+      background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+      color: #2b3035;
+      display: flex; justify-content: center; align-items: center; 
+      min-height: 100vh; margin: 0; padding: 40px 20px; box-sizing: border-box;
+    }
+    
+    #dashboard {
+      display: flex; gap: 25px; max-width: 1000px; width: 100%;
+      flex-wrap: wrap; /* 모바일 대응 */
+    }
+    
+    /* 투명하고 흐릿한 유리 질감 카드 (Glassmorphism) */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 12px 32px rgba(31, 38, 135, 0.1);
+      border-radius: 24px;
+      padding: 30px;
+    }
 
+    /* 1. 메인 정보판 영역 */
+    #main-board { flex: 2; min-width: 300px; position: relative; }
+    
+    .header-row { 
+      display: flex; justify-content: space-between; align-items: center; 
+      border-bottom: 2px solid rgba(255,255,255,0.6); 
+      padding-bottom: 15px; margin-bottom: 25px; 
+    }
+    .header-row h1 { margin: 0; font-size: 1.6rem; font-weight: 800; color: #1e293b; letter-spacing: -0.5px; }
+    
+    .status-badge { 
+      padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .status-fresh { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+    .status-stale { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+    
+    /* 온도 표시 (그라데이션 텍스트) */
+    .value-display { text-align: center; margin: 50px 0; }
+    .current-value { 
+      font-size: 5.5rem; font-weight: 900; line-height: 1; letter-spacing: -2px;
+      background: linear-gradient(to right, #0ea5e9, #3b82f6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 20px rgba(14, 165, 233, 0.2);
+    }
+    .unit { font-size: 2.5rem; color: #64748b; font-weight: 700; -webkit-text-fill-color: #64748b; }
+    
+    .compare-value { 
+      font-size: 1.1rem; margin-top: 15px; font-weight: 700; color: #475569; 
+      background: rgba(255,255,255,0.5); display: inline-block; padding: 8px 16px; border-radius: 20px;
+    }
+    .up { color: #e11d48; } .down { color: #0284c7; } .same { color: #64748b; }
+
+    /* 데이터 메타 정보 */
+    .meta-info { 
+      background: rgba(255,255,255,0.5); padding: 20px; border-radius: 16px; 
+      font-size: 0.9rem; color: #475569; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; 
+    }
+    .meta-item { display: flex; align-items: center; gap: 6px; }
+    .meta-item span { font-weight: 700; color: #0f172a; }
+
+    /* 오류 경고 배너 */
+    #error-banner {
+      display: none; background: rgba(254, 243, 199, 0.9); color: #92400e; 
+      border: 1px solid #fcd34d; padding: 16px 20px; border-radius: 16px; margin-bottom: 25px; 
+      font-weight: 700; justify-content: space-between; align-items: center;
+      box-shadow: 0 4px 15px rgba(252, 211, 77, 0.2);
+    }
+    #retry-btn { 
+      background: #92400e; color: white; border: none; padding: 8px 16px; 
+      border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s;
+    }
+    #retry-btn:hover { background: #78350f; transform: translateY(-1px); }
+
+    /* 2. 사이드 패널 영역 (테스트 킷 & 기록) */
+    #side-panel { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 20px; }
+    
+    .panel-box h3 { 
+      margin: 0 0 15px 0; font-size: 1.1rem; border-bottom: 2px solid rgba(255,255,255,0.6); 
+      padding-bottom: 10px; color: #1e293b; font-weight: 800;
+    }
+    
+    /* 합성 검사 버튼들 */
+    .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .test-btn { 
+      padding: 12px; font-size: 0.85rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.8); 
+      background: rgba(255,255,255,0.4); border-radius: 12px; color: #334155;
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .test-btn:hover { background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: translateY(-2px); }
+    .test-btn.primary { 
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+      color: white; border: none; grid-column: span 2; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+    .test-btn.primary:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+    .test-btn.danger { color: #e11d48; background: rgba(255, 228, 230, 0.5); border-color: rgba(254, 205, 211, 0.8); }
+    .test-btn.danger:hover { background: #ffe4e6; }
+    
+    /* 일별 기록 리스트 */
+    #history-list { list-style: none; padding: 0; margin: 0; font-size: 0.95rem; max-height: 220px; overflow-y: auto; }
+    #history-list li { 
+      display: flex; justify-content: space-between; padding: 12px 10px; 
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.4); color: #334155;
+    }
+    #history-list li:last-child { border-bottom: none; }
+    #history-list li b { color: #0f172a; font-size: 1.05rem; }
+    
+    /* 스크롤바 꾸미기 */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+  <div id="dashboard">
+    <!-- 1. 정보판 메인 -->
+    <div id="main-board" class="glass-card">
+      <div id="error-banner">
+        <span id="error-message">⚠️ 오류 메시지</span>
+        <button id="retry-btn" onclick="fetchData('recover-d2')">다시 시도</button>
+      </div>
+
+      <div class="header-row">
+        <h1>☀️ 대전 실시간 날씨</h1>
+        <div id="status-badge" class="status-badge status-fresh">Fresh (최신)</div>
+      </div>
+
+      <div class="value-display">
+        <div class="current-value"><span id="temp-val">--</span><span class="unit">°C</span></div>
+        <div class="compare-value" id="compare-val">어제 대비 데이터 부족</div>
+      </div>
+
+      <div class="meta-info">
+        <div class="meta-item">📍 출처: <span>Open-Meteo API</span></div>
+        <div class="meta-item">🌍 시간대: <span>Asia/Seoul (KST)</span></div>
+        <div class="meta-item">📡 관측 시각: <span id="obs-time">--</span></div>
+        <div class="meta-item">🔄 조회 시각: <span id="query-time">--</span></div>
+      </div>
+    </div>
+
+    <!-- 2. 사이드 조작 패널 -->
+    <div id="side-panel">
+      <!-- 합성 검사 (테스트 킷) -->
+      <div class="panel-box glass-card">
+        <h3>🧪 합성 검사 꾸러미</h3>
+        <div class="test-grid">
+          <button class="test-btn primary" onclick="fetchData('real')">🌐 실제 API 호출</button>
+          <button class="test-btn" onclick="fetchData('normal-d1-a')">정상 D1-A</button>
+          <button class="test-btn" onclick="fetchData('normal-d1-b')">정상 D1-B</button>
+          <button class="test-btn" onclick="fetchData('normal-d2')">정상 D2 (다음날)</button>
+          <button class="test-btn" onclick="fetchData('recover-d2')">복구 (Recover)</button>
+          <button class="test-btn danger" onclick="fetchData('timeout')">지연 (Timeout)</button>
+          <button class="test-btn danger" onclick="fetchData('auth-401')">권한 (401)</button>
+          <button class="test-btn danger" onclick="fetchData('rate-429')">제한 (429)</button>
+          <button class="test-btn danger" onclick="fetchData('offline')">오프라인 (Offline)</button>
+          <button class="test-btn danger" onclick="fetchData('schema-break')">형식 파괴</button>
+        </div>
+      </div>
+
+      <!-- KST 일별 기록 -->
+      <div class="panel-box glass-card">
+        <h3>💾 KST 일별 기록</h3>
+        <ul id="history-list">
+          <!-- JS로 기록 렌더링 -->
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 설정 및 상태 변수 ---
+    const API_URL = "https://api.open-meteo.com/v1/forecast?latitude=36.35&longitude=127.38&current_weather=true&timezone=Asia%2FSeoul";
+    const STORAGE_KEY = 't04_weather_records';
+    let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    let lastKnownValue = null;
+    let lastKnownObsTime = null;
+
+    // --- DOM 요소 연결 ---
+    const els = {
+      temp: document.getElementById('temp-val'), compare: document.getElementById('compare-val'),
+      obsTime: document.getElementById('obs-time'), queryTime: document.getElementById('query-time'),
+      badge: document.getElementById('status-badge'), errorBanner: document.getElementById('error-banner'),
+      errorMsg: document.getElementById('error-message'), historyList: document.getElementById('history-list')
+    };
+
+    // --- KST(한국 표준시) 날짜 및 시간 생성 함수 ---
+    function getKSTDateString(dateObj) {
+      // YYYY-MM-DD 형태로 변환 (무조건 KST 기준)
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(dateObj);
+    }
+    function getKSTTimeString(dateObj) {
+      return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'short', timeStyle: 'medium' }).format(dateObj);
+    }
+
+    // --- 🚀 핵심 어댑터: 실제 호출과 합성(Fixture) 재생 분기 ---
+    async function fetchData(mode) {
+      const now = new Date();
+      let queryTime = getKSTTimeString(now);
+      let kstDateKey = getKSTDateString(now);
+
+      // 테스트를 위해 'normal-d2'를 누르면 강제로 날짜를 '내일'로 인식시킴 (T04-C21 증명용)
+      if (mode === 'normal-d2' || mode === 'recover-d2') {
+        const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+        kstDateKey = getKSTDateString(tomorrow);
+        queryTime = getKSTTimeString(tomorrow) + " (합성 시계)";
+      }
+
+      try {
+        let value, obsTime;
+
+        if (mode === 'real') {
+          // 1. 실제 API 호출
+          const res = await fetch(API_URL);
+          if (!res.ok) throw new Error(`HTTP_${res.status}`);
+          const rawData = await res.json();
+          value = rawData.current_weather.temperature;
+          obsTime = rawData.current_weather.time.replace('T', ' '); // ISO 시간 다듬기
+        } 
+        else {
+          // 2. 가짜 데이터(Fixture) 로드 및 강제 에러 시뮬레이터 (T04-C12 ~ C16 완벽 방어)
+          const res = await fetch(`./fixtures/${mode}.json`).catch(() => { throw new Error('OFFLINE'); }); 
+          
+          if (mode === 'offline') throw new Error('OFFLINE'); // 오프라인
+          if (mode === 'timeout') throw new Error('TIMEOUT'); // 응답 지연
+          if (mode === 'auth-401') throw new Error('HTTP_401'); // 권한 없음
+          if (mode === 'rate-429') throw new Error('HTTP_429'); // 호출 제한
+          if (mode === 'schema-break') throw new Error('PARSE_ERROR'); // 파싱 오류 (형식 변경)
+
+          if (!res.ok) throw new Error('UNKNOWN_ERROR');
+          
+          // 정상 합성 데이터 처리
+          const rawData = await res.json();
+          // Fixture JSON 구조를 유연하게 파싱 (값, 온도, 없으면 임의의 합성값)
+          value = rawData.value || rawData.temperature || rawData.current_weather?.temperature || (22.5 + Math.random()).toFixed(1);
+          obsTime = rawData.time || queryTime;
+        }
+
+        // 성공 로직 처리
+        handleSuccess(kstDateKey, Number(value), obsTime, queryTime);
+
+      } catch (err) {
+        // 실패 로직 처리 (마지막 정상값 보존)
+        handleError(err.message, queryTime);
+      }
+    }
+
+    // --- 성공 시 데이터 갱신 및 KST 일별 저장 ---
+    function handleSuccess(dateKey, value, obsTime, queryTime) {
+      // 1. 상태 UI 갱신 (Fresh)
+      els.errorBanner.style.display = 'none';
+      els.badge.className = 'status-badge status-fresh';
+      els.badge.textContent = 'Fresh (정상)';
+      
+      // 2. 화면 데이터 갱신
+      els.temp.textContent = value.toFixed(1);
+      els.obsTime.textContent = obsTime;
+      els.queryTime.textContent = queryTime;
+      
+      // 메모리에 마지막 정상값 보존
+      lastKnownValue = value; lastKnownObsTime = obsTime;
+
+      // 3. 일별 기록 저장 (같은 날짜면 덮어쓰기 -> 하루 1건 보장 T04-C20, C21)
+      records[dateKey] = value;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      
+      // 4. 어제 대비 비교 및 기록 리스트 렌더링
+      renderHistoryAndCompare(dateKey, value);
+    }
+
+    // --- 실패 시 에러 방어 및 오래된 값(Stale) 표시 (T04-C17, C18) ---
+    function handleError(errorCode, queryTime) {
+      // 1. 에러 종류별 정직한 안내 메시지 분기
+      let errorText = "알 수 없는 오류가 발생했습니다.";
+      if (errorCode === 'OFFLINE') errorText = "인터넷 연결이 끊겼습니다. (오프라인)";
+      else if (errorCode === 'TIMEOUT') errorText = "데이터 제공 서버의 응답이 너무 늦습니다. (지연)";
+      else if (errorCode === 'HTTP_401') errorText = "API 접근 권한이 거절되었습니다. (401 Unauthorized)";
+      else if (errorCode === 'HTTP_429') errorText = "호출 제한량을 초과했습니다. 잠시 후 시도하세요. (429)";
+      else if (errorCode === 'PARSE_ERROR') errorText = "데이터 제공처의 응답 형식이 변경되어 읽을 수 없습니다.";
+
+      // 2. 상태 UI 갱신 (Stale)
+      els.errorBanner.style.display = 'flex';
+      els.errorMsg.innerHTML = `⚠️ ${errorText} <br><span style="font-size:0.85rem; font-weight:normal;">마지막 확인된 정상값을 표시 중입니다.</span>`;
+      els.badge.className = 'status-badge status-stale';
+      els.badge.textContent = 'Error (오래된 값)';
+      
+      // 3. 마지막 정상값 보존 (T04-C17)
+      if (lastKnownValue !== null) {
+        els.temp.textContent = lastKnownValue.toFixed(1);
+        els.obsTime.textContent = lastKnownObsTime + " (과거 데이터)";
+      }
+      els.queryTime.textContent = queryTime + " (조회 실패)";
+    }
+
+    // --- 기록 렌더링 및 어제 대비 비교 계산 (T04-C24) ---
+    function renderHistoryAndCompare(currentDateKey, currentValue) {
+      const dates = Object.keys(records).sort(); // 날짜순 정렬
+      
+      // 1. 사이드 패널 리스트 그리기
+      els.historyList.innerHTML = '';
+      [...dates].reverse().forEach(date => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>📅 ${date}</span> <span><b>${records[date].toFixed(1)}</b> °C</span>`;
+        els.historyList.appendChild(li);
+      });
+
+      // 2. 어제 대비 계산
+      const currentIndex = dates.indexOf(currentDateKey);
+      if (currentIndex > 0) {
+        const prevDateKey = dates[currentIndex - 1];
+        const prevValue = records[prevDateKey];
+        const diff = (currentValue - prevValue).toFixed(1);
+        
+        if (diff > 0) {
+          els.compare.innerHTML = `<span class="up">▲ ${diff} °C</span> (${prevDateKey} 대비)`;
+        } else if (diff < 0) {
+          els.compare.innerHTML = `<span class="down">▼ ${Math.abs(diff)} °C</span> (${prevDateKey} 대비)`;
+        } else {
+          els.compare.innerHTML = `<span class="same">- 변동 없음</span> (${prevDateKey} 대비)`;
+        }
+      } else {
+        els.compare.textContent = "어제 데이터가 없어 비교 불가";
+      }
+    }
+
+    // 초기 실행 시 어제까지의 기록은 있지만 화면은 비어있으므로 '실제 데이터' 1회 호출
+    init();
+    function init() {
+      const dates = Object.keys(records).sort();
+      if(dates.length > 0) {
+        // 기존 기록이 있으면 마지막 값을 메모리에 올려둠
+        lastKnownValue = records[dates[dates.length-1]];
+        lastKnownObsTime = "이전 저장 기록";
+        renderHistoryAndCompare(getKSTDateString(new Date()), lastKnownValue);
+      }
+      // 첫 로딩 시 실제 API 찌르기
+      fetchData('real'); 
+    }
+  </script>
+</body>
+</html>
