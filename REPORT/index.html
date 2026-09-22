@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>진짜 정보판: 대전 실시간 날씨</title>
+
+  <style>
+    /* =========================================================
+       🎨 글래스모피즘 & 파스텔 테마
+       외부 라이브러리 없이 동작
+    ========================================================= */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Malgun Gothic",
+        "Apple SD Gothic Neo",
+        sans-serif;
+
+      background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+      color: #2b3035;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      min-height: 100vh;
+      margin: 0;
+      padding: 40px 20px;
+    }
+
+    #dashboard {
+      display: flex;
+      gap: 25px;
+      max-width: 1000px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    /* =========================================================
+       Glassmorphism
+    ========================================================= */
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+
+      border: 1px solid rgba(255, 255, 255, 0.8);
+
+      box-shadow:
+        0 12px 32px rgba(31, 38, 135, 0.1);
+
+      border-radius: 24px;
+      padding: 30px;
+    }
+
+    /* =========================================================
+       1. 메인 정보판
+    ========================================================= */
+
+    #main-board {
+      flex: 2;
+      min-width: 300px;
+      position: relative;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      border-bottom: 2px solid rgba(255, 255, 255, 0.6);
+
+      padding-bottom: 15px;
+      margin-bottom: 25px;
+    }
+
+    .header-row h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #1e293b;
+      letter-spacing: -0.5px;
+    }
+
+    .status-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+
+      font-weight: 700;
+      font-size: 0.85rem;
+
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .status-fresh {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .status-stale {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    /* =========================================================
+       온도 / 습도 표시
+    ========================================================= */
+
+    .value-display {
+      text-align: center;
+      margin: 45px 0;
+    }
+
+    .weather-values {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 45px;
+      flex-wrap: wrap;
+    }
+
+    .weather-item {
+      min-width: 180px;
+    }
+
+    .weather-label {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #475569;
+      margin-bottom: 10px;
+    }
+
+    .current-value {
+      font-size: 5rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -2px;
+
+      background: linear-gradient(to right, #0ea5e9, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+
+      text-shadow: 0 4px 20px rgba(14, 165, 233, 0.2);
+    }
+
+    .humidity-value {
+      background: linear-gradient(to right, #06b6d4, #0284c7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .unit {
+      font-size: 2rem;
+      color: #64748b;
+      font-weight: 700;
+      -webkit-text-fill-color: #64748b;
+    }
+
+    .compare-value {
+      font-size: 1.1rem;
+      margin-top: 25px;
+
+      font-weight: 700;
+      color: #475569;
+
+      background: rgba(255, 255, 255, 0.5);
+
+      display: inline-block;
+
+      padding: 8px 16px;
+      border-radius: 20px;
+    }
+
+    .up {
+      color: #e11d48;
+    }
+
+    .down {
+      color: #0284c7;
+    }
+
+    .same {
+      color: #64748b;
+    }
+
+    /* =========================================================
+       데이터 메타 정보
+    ========================================================= */
+
+    .meta-info {
+      background: rgba(255, 255, 255, 0.5);
+
+      padding: 20px;
+      border-radius: 16px;
+
+      font-size: 0.9rem;
+      color: #475569;
+
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .meta-item span {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    /* =========================================================
+       오류 경고 배너
+    ========================================================= */
+
+    #error-banner {
+      display: none;
+
+      background: rgba(254, 243, 199, 0.9);
+      color: #92400e;
+
+      border: 1px solid #fcd34d;
+
+      padding: 16px 20px;
+      border-radius: 16px;
+
+      margin-bottom: 25px;
+
+      font-weight: 700;
+
+      justify-content: space-between;
+      align-items: center;
+
+      gap: 15px;
+
+      box-shadow: 0 4px 15px rgba(252, 211, 77, 0.2);
+    }
+
+    #retry-btn {
+      background: #92400e;
+      color: white;
+
+      border: none;
+
+      padding: 8px 16px;
+      border-radius: 8px;
+
+      cursor: pointer;
+      font-weight: 700;
+
+      transition: 0.2s;
+
+      white-space: nowrap;
+    }
+
+    #retry-btn:hover {
+      background: #78350f;
+      transform: translateY(-1px);
+    }
+
+    /* =========================================================
+       2. 사이드 패널
+    ========================================================= */
+
+    #side-panel {
+      flex: 1;
+      min-width: 280px;
+
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-box h3 {
+      margin: 0 0 15px 0;
+
+      font-size: 1.1rem;
+
+      border-bottom: 2px solid rgba(255, 255, 255, 0.6);
+
+      padding-bottom: 10px;
+
+      color: #1e293b;
+      font-weight: 800;
+    }
+
+    /* =========================================================
+       테스트 버튼
+    ========================================================= */
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .test-btn {
+      padding: 12px;
+
+      font-size: 0.85rem;
+      font-weight: 700;
+
+      border: 1px solid rgba(255, 255, 255, 0.8);
+
+      background: rgba(255, 255, 255, 0.4);
+
+      border-radius: 12px;
+      color: #334155;
+
+      cursor: pointer;
+
+      transition: all 0.2s ease;
+
+      min-height: 44px;
+    }
+
+    .test-btn:hover:not(:disabled) {
+      background: white;
+
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+      transform: translateY(-2px);
+    }
+
+    .test-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+      transform: none;
+    }
+
+    .test-btn.primary {
+      background: linear-gradient(
+        135deg,
+        #3b82f6 0%,
+        #2563eb 100%
+      );
+
+      color: white;
+      border: none;
+
+      grid-column: span 2;
+
+      box-shadow:
+        0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    .test-btn.primary:hover:not(:disabled) {
+      background: linear-gradient(
+        135deg,
+        #2563eb 0%,
+        #1d4ed8 100%
+      );
+    }
+
+    .test-btn.danger {
+      color: #e11d48;
+
+      background: rgba(255, 228, 230, 0.5);
+
+      border-color: rgba(254, 205, 211, 0.8);
+    }
+
+    .test-btn.danger:hover:not(:disabled) {
+      background: #ffe4e6;
+    }
+
+    /* =========================================================
+       로딩 스피너
+       최소 1초 동안 표시
+    ========================================================= */
+
+    #loading-overlay {
+      position: fixed;
+
+      inset: 0;
+
+      background: rgba(15, 23, 42, 0.25);
+
+      backdrop-filter: blur(3px);
+
+      display: none;
+
+      justify-content: center;
+      align-items: center;
+
+      z-index: 9999;
+    }
+
+    #loading-box {
+      background: rgba(255, 255, 255, 0.9);
+
+      border: 1px solid rgba(255, 255, 255, 0.9);
+
+      border-radius: 20px;
+
+      padding: 28px 38px;
+
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+
+      text-align: center;
+    }
+
+    .spinner {
+      width: 42px;
+      height: 42px;
+
+      border: 5px solid #dbeafe;
+      border-top-color: #2563eb;
+
+      border-radius: 50%;
+
+      animation: spin 0.8s linear infinite;
+
+      margin: 0 auto 14px;
+    }
+
+    .loading-text {
+      font-weight: 800;
+      color: #334155;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* =========================================================
+       일별 기록
+    ========================================================= */
+
+    #history-list {
+      list-style: none;
+
+      padding: 0;
+      margin: 0;
+
+      font-size: 0.95rem;
+
+      max-height: 220px;
+
+      overflow-y: auto;
+    }
+
+    #history-list li {
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      padding: 12px 10px;
+
+      border-bottom:
+        1px dashed rgba(148, 163, 184, 0.4);
+
+      color: #334155;
+    }
+
+    #history-list li:last-child {
+      border-bottom: none;
+    }
+
+    #history-list li b {
+      color: #0f172a;
+      font-size: 1.05rem;
+    }
+
+    .history-humidity {
+      color: #0284c7;
+      font-size: 0.85rem;
+      margin-left: 5px;
+    }
+
+    /* =========================================================
+       스크롤바
+    ========================================================= */
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.5);
+      border-radius: 10px;
+    }
+
+    /* =========================================================
+       모바일
+    ========================================================= */
+
+    @media (max-width: 650px) {
+
+      body {
+        padding: 20px 12px;
+      }
+
+      .glass-card {
+        padding: 22px;
+      }
+
+      .header-row {
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .header-row h1 {
+        font-size: 1.3rem;
+      }
+
+      .current-value {
+        font-size: 4rem;
+      }
+
+      .weather-values {
+        gap: 25px;
+      }
+
+      .meta-info {
+        grid-template-columns: 1fr;
+      }
+
+      #error-banner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      #retry-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =========================================================
+       로딩 화면
+  ========================================================= -->
+
+  <div id="loading-overlay">
+    <div id="loading-box">
+      <div class="spinner"></div>
+      <div class="loading-text">날씨 데이터를 불러오는 중...</div>
+    </div>
+  </div>
+
+
+  <div id="dashboard">
+
+    <!-- =======================================================
+         1. 메인 정보판
+    ======================================================= -->
+
+    <div id="main-board" class="glass-card">
+
+      <!-- 오류 배너 -->
+
+      <div id="error-banner">
+
+        <span id="error-message">
+          ⚠️ 오류 메시지
+        </span>
+
+        <button
+          id="retry-btn"
+          onclick="fetchData('recover-d2')"
+        >
+          다시 시도
+        </button>
+
+      </div>
+
+
+      <!-- 헤더 -->
+
+      <div class="header-row">
+
+        <h1>
+          ☀️ 대전 실시간 날씨
+        </h1>
+
+        <div
+          id="status-badge"
+          class="status-badge status-fresh"
+        >
+          Fresh (최신)
+        </div>
+
+      </div>
+
+
+      <!-- 온도 / 습도 -->
+
+      <div class="value-display">
+
+        <div class="weather-values">
+
+          <!-- 온도 -->
+
+          <div class="weather-item">
+
+            <div class="weather-label">
+              🌡️ 현재 온도
+            </div>
+
+            <div class="current-value">
+              <span id="temp-val">--</span>
+              <span class="unit">°C</span>
+            </div>
+
+          </div>
+
+
+          <!-- 습도 -->
+
+          <div class="weather-item">
+
+            <div class="weather-label">
+              💧 현재 습도
+            </div>
+
+            <div class="current-value humidity-value">
+              <span id="humidity-val">--</span>
+              <span class="unit">%</span>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- 어제 대비 -->
+
+        <div
+          class="compare-value"
+          id="compare-val"
+        >
+          어제 대비 데이터 부족
+        </div>
+
+      </div>
+
+
+      <!-- 메타 정보 -->
+
+      <div class="meta-info">
+
+        <div class="meta-item">
+          📍 출처:
+          <span>Open-Meteo API</span>
+        </div>
+
+        <div class="meta-item">
+          🌍 시간대:
+          <span>Asia/Seoul (KST)</span>
+        </div>
+
+        <div class="meta-item">
+          📡 관측 시각:
+          <span id="obs-time">--</span>
+        </div>
+
+        <div class="meta-item">
+          🔄 조회 시각:
+          <span id="query-time">--</span>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- =======================================================
+         2. 사이드 패널
+    ======================================================= -->
+
+    <div id="side-panel">
+
+      <!-- 테스트 킷 -->
+
+      <div class="panel-box glass-card">
+
+        <h3>
+          🧪 합성 검사 꾸러미
+        </h3>
+
+        <div class="test-grid">
+
+          <button
+            class="test-btn primary"
+            onclick="fetchData('real')"
+          >
+            🌐 실제 API 호출
+          </button>
+
+          <button
+            class="test-btn"
+            onclick="fetchData('normal-d1-a')"
+          >
+            정상 D1-A
+          </button>
+
+          <button
+            class="test-btn"
+            onclick="fetchData('normal-d1-b')"
+          >
+            정상 D1-B
+          </button>
+
+          <button
+            class="test-btn"
+            onclick="fetchData('normal-d2')"
+          >
+            정상 D2 (다음날)
+          </button>
+
+          <button
+            class="test-btn"
+            onclick="fetchData('recover-d2')"
+          >
+            복구 (Recover)
+          </button>
+
+          <button
+            class="test-btn danger"
+            onclick="fetchData('timeout')"
+          >
+            지연 (Timeout)
+          </button>
+
+          <button
+            class="test-btn danger"
+            onclick="fetchData('auth-401')"
+          >
+            권한 (401)
+          </button>
+
+          <button
+            class="test-btn danger"
+            onclick="fetchData('rate-429')"
+          >
+            제한 (429)
+          </button>
+
+          <button
+            class="test-btn danger"
+            onclick="fetchData('offline')"
+          >
+            오프라인 (Offline)
+          </button>
+
+          <button
+            class="test-btn danger"
+            onclick="fetchData('schema-break')"
+          >
+            형식 파괴
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- KST 일별 기록 -->
+
+      <div class="panel-box glass-card">
+
+        <h3>
+          💾 KST 일별 기록
+        </h3>
+
+        <ul id="history-list">
+          <!-- JS로 기록 렌더링 -->
+        </ul>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    /* =========================================================
+       설정 및 상태 변수
+    ========================================================= */
+
+    /*
+      Open-Meteo에서 현재 온도와 현재 상대습도를 함께 요청한다.
+
+      기존:
+      current_weather=true
+
+      변경:
+      current=temperature_2m,relative_humidity_2m
+    */
+
+    const API_URL =
+      "https://api.open-meteo.com/v1/forecast" +
+      "?latitude=36.35" +
+      "&longitude=127.38" +
+      "&current=temperature_2m,relative_humidity_2m" +
+      "&timezone=Asia%2FSeoul";
+
+
+    const STORAGE_KEY =
+      "t04_weather_records";
+
+
+    /*
+      기존 localStorage 기록 구조를 최대한 유지한다.
+
+      기존 값:
+      {
+        "2026-09-22": 25.5
+      }
+
+      새로운 기록은 온도와 습도를 함께 보존한다.
+
+      {
+        "2026-09-22": {
+          "temperature": 25.5,
+          "humidity": 65
+        }
+      }
+    */
+
+    let records =
+      JSON.parse(
+        localStorage.getItem(STORAGE_KEY)
+      ) || {};
+
+
+    /*
+      마지막 정상값
+
+      에러가 발생했을 때 이 값을 화면에 유지한다.
+    */
+
+    let lastKnownValue = null;
+    let lastKnownHumidity = null;
+    let lastKnownObsTime = null;
+
+
+    /* =========================================================
+       DOM 요소 연결
+    ========================================================= */
+
+    const els = {
+
+      temp:
+        document.getElementById("temp-val"),
+
+      humidity:
+        document.getElementById("humidity-val"),
+
+      compare:
+        document.getElementById("compare-val"),
+
+      obsTime:
+        document.getElementById("obs-time"),
+
+      queryTime:
+        document.getElementById("query-time"),
+
+      badge:
+        document.getElementById("status-badge"),
+
+      errorBanner:
+        document.getElementById("error-banner"),
+
+      errorMsg:
+        document.getElementById("error-message"),
+
+      historyList:
+        document.getElementById("history-list"),
+
+      loadingOverlay:
+        document.getElementById("loading-overlay")
+
+    };
+
+
+    /* =========================================================
+       KST 날짜 / 시간
+    ========================================================= */
+
+    function getKSTDateString(dateObj) {
+
+      return new Intl.DateTimeFormat(
+        "en-CA",
+        {
+          timeZone: "Asia/Seoul",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }
+      ).format(dateObj);
+
+    }
+
+
+    function getKSTTimeString(dateObj) {
+
+      return new Intl.DateTimeFormat(
+        "ko-KR",
+        {
+          timeZone: "Asia/Seoul",
+          dateStyle: "short",
+          timeStyle: "medium"
+        }
+      ).format(dateObj);
+
+    }
+
+
+    /* =========================================================
+       최소 1초 로딩 보장
+    ========================================================= */
+
+    function waitMinimumOneSecond(startTime) {
+
+      const elapsed =
+        Date.now() - startTime;
+
+      const remaining =
+        Math.max(0, 1000 - elapsed);
+
+      return new Promise(
+        resolve => setTimeout(
+          resolve,
+          remaining
+        )
+      );
+
+    }
+
+
+    function setLoading(isLoading) {
+
+      els.loadingOverlay.style.display =
+        isLoading ? "flex" : "none";
+
+      /*
+        로딩 중에는 테스트 버튼을 비활성화한다.
+
+        단, 현재 클릭 중인 버튼도 함께 비활성화되므로
+        중복 요청을 방지할 수 있다.
+      */
+
+      document
+        .querySelectorAll(".test-btn")
+        .forEach(button => {
+
+          button.disabled = isLoading;
+
+        });
+
+    }
+
+
+    /* =========================================================
+       기존 데이터와 새로운 데이터 구조 호환
+    ========================================================= */
+
+    function normalizeRecord(record) {
+
+      /*
+        과거 localStorage에 온도 숫자만 저장되어 있어도
+        기존 데이터를 깨뜨리지 않는다.
+      */
+
+      if (
+        typeof record === "number"
+      ) {
+
+        return {
+          temperature: record,
+          humidity: null
+        };
+
+      }
+
+
+      if (
+        record &&
+        typeof record === "object"
+      ) {
+
+        return {
+          temperature:
+            Number(record.temperature),
+
+          humidity:
+            record.humidity === null ||
+            record.humidity === undefined
+              ? null
+              : Number(record.humidity)
+        };
+
+      }
+
+
+      return {
+        temperature: null,
+        humidity: null
+      };
+
+    }
+
+
+    /* =========================================================
+       핵심 데이터 호출
+    ========================================================= */
+
+    async function fetchData(mode) {
+
+      const loadingStart =
+        Date.now();
+
+      setLoading(true);
+
+
+      const now =
+        new Date();
+
+
+      let queryTime =
+        getKSTTimeString(now);
+
+
+      let kstDateKey =
+        getKSTDateString(now);
+
+
+      /*
+        normal-d2 / recover-d2는
+        테스트용으로 다음 날짜로 처리한다.
+      */
+
+      if (
+        mode === "normal-d2" ||
+        mode === "recover-d2"
+      ) {
+
+        const tomorrow =
+          new Date(now);
+
+        tomorrow.setDate(
+          tomorrow.getDate() + 1
+        );
+
+
+        kstDateKey =
+          getKSTDateString(tomorrow);
+
+
+        queryTime =
+          getKSTTimeString(tomorrow) +
+          " (합성 시계)";
+
+      }
+
+
+      try {
+
+        let value;
+        let humidity;
+        let obsTime;
+
+
+        /* =====================================================
+           실제 API
+        ===================================================== */
+
+        if (mode === "real") {
+
+          const res =
+            await fetch(API_URL);
+
+
+          if (!res.ok) {
+
+            throw new Error(
+              `HTTP_${res.status}`
+            );
+
+          }
+
+
+          const rawData =
+            await res.json();
+
+
+          /*
+            새로운 Open-Meteo 응답 구조:
+
+            current.temperature_2m
+            current.relative_humidity_2m
+            current.time
+          */
+
+          if (
+            !rawData.current ||
+            rawData.current.temperature_2m === undefined ||
+            rawData.current.relative_humidity_2m === undefined
+          ) {
+
+            throw new Error(
+              "PARSE_ERROR"
+            );
+
+          }
+
+
+          value =
+            Number(
+              rawData.current.temperature_2m
+            );
+
+
+          humidity =
+            Number(
+              rawData.current.relative_humidity_2m
+            );
+
+
+          obsTime =
+            rawData.current.time
+              .replace("T", " ");
+
+        }
+
+
+        /* =====================================================
+           Fixture / 가짜 데이터
+        ===================================================== */
+
+        else {
+
+          /*
+            기존 5가지 에러 테스트용
+            fixture 로딩 구조를 유지한다.
+          */
+
+          const res =
+            await fetch(
+              `./fixtures/${mode}.json`
+            )
+            .catch(() => {
+
+              throw new Error(
+                "OFFLINE"
+              );
+
+            });
+
+
+          /* -----------------------------------------------
+             기존 에러 시뮬레이션 유지
+          ------------------------------------------------ */
+
+          if (mode === "offline") {
+
+            throw new Error(
+              "OFFLINE"
+            );
+
+          }
+
+
+          if (mode === "timeout") {
+
+            throw new Error(
+              "TIMEOUT"
+            );
+
+          }
+
+
+          if (mode === "auth-401") {
+
+            throw new Error(
+              "HTTP_401"
+            );
+
+          }
+
+
+          if (mode === "rate-429") {
+
+            throw new Error(
+              "HTTP_429"
+            );
+
+          }
+
+
+          if (mode === "schema-break") {
+
+            throw new Error(
+              "PARSE_ERROR"
+            );
+
+          }
+
+
+          if (!res.ok) {
+
+            throw new Error(
+              "UNKNOWN_ERROR"
+            );
+
+          }
+
+
+          /* -----------------------------------------------
+             정상 Fixture 처리
+          ------------------------------------------------ */
+
+          const rawData =
+            await res.json();
+
+
+          /*
+            기존 fixture의 여러 데이터 형식을
+            계속 허용한다.
+          */
+
+          value =
+            rawData.value ??
+            rawData.temperature ??
+            rawData.current_weather?.temperature ??
+            rawData.current?.temperature_2m;
+
+
+          /*
+            습도도 여러 형태를 허용한다.
+
+            우선순위:
+            1. humidity
+            2. relative_humidity
+            3. relative_humidity_2m
+            4. current_weather.humidity
+            5. current.relative_humidity_2m
+          */
+
+          humidity =
+            rawData.humidity ??
+            rawData.relative_humidity ??
+            rawData.relative_humidity_2m ??
+            rawData.current_weather?.humidity ??
+            rawData.current?.relative_humidity_2m;
+
+
+          /*
+            기존 fallback 온도 유지
+          */
+
+          if (
+            value === undefined ||
+            value === null
+          ) {
+
+            value =
+              (
+                22.5 +
+                Math.random()
+              ).toFixed(1);
+
+          }
+
+
+          /*
+            fixture에 습도가 없는 경우
+            합성 데이터로 사용할 수 있도록 한다.
+          */
+
+          if (
+            humidity === undefined ||
+            humidity === null
+          ) {
+
+            humidity =
+              Math.round(
+                55 +
+                Math.random() * 15
+              );
+
+          }
+
+
+          obsTime =
+            rawData.time ||
+            rawData.current_weather?.time ||
+            rawData.current?.time ||
+            queryTime;
+
+        }
+
+
+        /* =====================================================
+           데이터 검증
+        ===================================================== */
+
+        value =
+          Number(value);
+
+        humidity =
+          Number(humidity);
+
+
+        if (
+          !Number.isFinite(value) ||
+          !Number.isFinite(humidity)
+        ) {
+
+          throw new Error(
+            "PARSE_ERROR"
+          );
+
+        }
+
+
+        if (
+          humidity < 0 ||
+          humidity > 100
+        ) {
+
+          throw new Error(
+            "PARSE_ERROR"
+          );
+
+        }
+
+
+        /* =====================================================
+           성공 처리
+        ===================================================== */
+
+        handleSuccess(
+          kstDateKey,
+          value,
+          humidity,
+          obsTime,
+          queryTime
+        );
+
+
+      } catch (err) {
+
+        /*
+          실패하더라도 마지막 정상 온도/습도를
+          그대로 보존한다.
+        */
+
+        handleError(
+          err.message,
+          queryTime
+        );
+
+      } finally {
+
+        /*
+          클릭 후 최소 1초 동안 spinner 유지
+        */
+
+        await waitMinimumOneSecond(
+          loadingStart
+        );
+
+
+        setLoading(false);
+
+      }
+
+    }
+
+
+    /* =========================================================
+       성공 처리
+    ========================================================= */
+
+    function handleSuccess(
+      dateKey,
+      value,
+      humidity,
+      obsTime,
+      queryTime
+    ) {
+
+      /* -------------------------------------------------------
+         1. 상태 UI
+      ------------------------------------------------------- */
+
+      els.errorBanner.style.display =
+        "none";
+
+
+      els.badge.className =
+        "status-badge status-fresh";
+
+
+      els.badge.textContent =
+        "Fresh (정상)";
+
+
+      /* -------------------------------------------------------
+         2. 화면 데이터
+      ------------------------------------------------------- */
+
+      els.temp.textContent =
+        value.toFixed(1);
+
+
+      els.humidity.textContent =
+        humidity.toFixed(0);
+
+
+      els.obsTime.textContent =
+        obsTime;
+
+
+      els.queryTime.textContent =
+        queryTime;
+
+
+      /* -------------------------------------------------------
+         3. 마지막 정상값 저장
+      ------------------------------------------------------- */
+
+      lastKnownValue =
+        value;
+
+
+      lastKnownHumidity =
+        humidity;
+
+
+      lastKnownObsTime =
+        obsTime;
+
+
+      /* -------------------------------------------------------
+         4. KST 일별 기록
+         
+         같은 날짜면 덮어쓰기
+         → 하루 1건 보장
+      ------------------------------------------------------- */
+
+      records[dateKey] = {
+
+        temperature:
+          value,
+
+        humidity:
+          humidity
+
+      };
+
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(records)
+      );
+
+
+      /* -------------------------------------------------------
+         5. 기록 / 비교
+      ------------------------------------------------------- */
+
+      renderHistoryAndCompare(
+        dateKey,
+        value
+      );
+
+    }
+
+
+    /* =========================================================
+       실패 처리
+       기존 5가지 에러 메시지 유지
+    ========================================================= */
+
+    function handleError(
+      errorCode,
+      queryTime
+    ) {
+
+      let errorText =
+        "알 수 없는 오류가 발생했습니다.";
+
+
+      if (
+        errorCode === "OFFLINE"
+      ) {
+
+        errorText =
+          "인터넷 연결이 끊겼습니다. (오프라인)";
+
+      }
+
+      else if (
+        errorCode === "TIMEOUT"
+      ) {
+
+        errorText =
+          "데이터 제공 서버의 응답이 너무 늦습니다. (지연)";
+
+      }
+
+      else if (
+        errorCode === "HTTP_401"
+      ) {
+
+        errorText =
+          "API 접근 권한이 거절되었습니다. (401 Unauthorized)";
+
+      }
+
+      else if (
+        errorCode === "HTTP_429"
+      ) {
+
+        errorText =
+          "호출 제한량을 초과했습니다. 잠시 후 시도하세요. (429)";
+
+      }
+
+      else if (
+        errorCode === "PARSE_ERROR"
+      ) {
+
+        errorText =
+          "데이터 제공처의 응답 형식이 변경되어 읽을 수 없습니다.";
+
+      }
+
+
+      /* -------------------------------------------------------
+         노란색 에러 배너
+      ------------------------------------------------------- */
+
+      els.errorBanner.style.display =
+        "flex";
+
+
+      els.errorMsg.innerHTML =
+        `⚠️ ${errorText}
+        <br>
+        <span
+          style="
+            font-size:0.85rem;
+            font-weight:normal;
+          "
+        >
+          마지막 확인된 정상값을 표시 중입니다.
+        </span>`;
+
+
+      /* -------------------------------------------------------
+         상태 → Stale
+      ------------------------------------------------------- */
+
+      els.badge.className =
+        "status-badge status-stale";
+
+
+      els.badge.textContent =
+        "Error (오래된 값)";
+
+
+      /* -------------------------------------------------------
+         마지막 정상 온도 보존
+      ------------------------------------------------------- */
+
+      if (
+        lastKnownValue !== null
+      ) {
+
+        els.temp.textContent =
+          lastKnownValue.toFixed(1);
+
+        els.obsTime.textContent =
+          lastKnownObsTime +
+          " (과거 데이터)";
+
+      }
+
+
+      /* -------------------------------------------------------
+         마지막 정상 습도 보존
+      ------------------------------------------------------- */
+
+      if (
+        lastKnownHumidity !== null
+      ) {
+
+        els.humidity.textContent =
+          lastKnownHumidity.toFixed(0);
+
+      }
+
+
+      /* -------------------------------------------------------
+         조회 실패 시간
+      ------------------------------------------------------- */
+
+      els.queryTime.textContent =
+        queryTime +
+        " (조회 실패)";
+
+    }
+
+
+    /* =========================================================
+       기록 렌더링 + 어제 대비 비교
+    ========================================================= */
+
+    function renderHistoryAndCompare(
+      currentDateKey,
+      currentValue
+    ) {
+
+      const dates =
+        Object.keys(records).sort();
+
+
+      /* -------------------------------------------------------
+         1. 기록 리스트
+      ------------------------------------------------------- */
+
+      els.historyList.innerHTML =
+        "";
+
+
+      [...dates]
+        .reverse()
+        .forEach(date => {
+
+          const li =
+            document.createElement("li");
+
+
+          const record =
+            normalizeRecord(
+              records[date]
+            );
+
+
+          const humidityText =
+            record.humidity !== null
+              ? `<span class="history-humidity">
+                   💧 ${record.humidity.toFixed(0)}%
+                 </span>`
+              : "";
+
+
+          li.innerHTML = `
+            <span>
+              📅 ${date}
+            </span>
+
+            <span>
+              <b>
+                ${record.temperature.toFixed(1)}
+              </b>
+              °C
+
+              ${humidityText}
+            </span>
+          `;
+
+
+          els.historyList.appendChild(li);
+
+        });
+
+
+      /* -------------------------------------------------------
+         2. 어제 대비 온도 계산
+      ------------------------------------------------------- */
+
+      const currentIndex =
+        dates.indexOf(
+          currentDateKey
+        );
+
+
+      if (
+        currentIndex > 0
+      ) {
+
+        const prevDateKey =
+          dates[currentIndex - 1];
+
+
+        const prevRecord =
+          normalizeRecord(
+            records[prevDateKey]
+          );
+
+
+        const prevValue =
+          prevRecord.temperature;
+
+
+        const diff =
+          (
+            currentValue -
+            prevValue
+          ).toFixed(1);
+
+
+        if (
+          diff > 0
+        ) {
+
+          els.compare.innerHTML =
+            `<span class="up">
+              ▲ ${diff} °C
+            </span>
+            (${prevDateKey} 대비)`;
+
+        }
+
+        else if (
+          diff < 0
+        ) {
+
+          els.compare.innerHTML =
+            `<span class="down">
+              ▼ ${Math.abs(diff)} °C
+            </span>
+            (${prevDateKey} 대비)`;
+
+        }
+
+        else {
+
+          els.compare.innerHTML =
+            `<span class="same">
+              - 변동 없음
+            </span>
+            (${prevDateKey} 대비)`;
+
+        }
+
+      }
+
+      else {
+
+        els.compare.textContent =
+          "어제 데이터가 없어 비교 불가";
+
+      }
+
+    }
+
+
+    /* =========================================================
+       초기 실행
+    ========================================================= */
+
+    init();
+
+
+    function init() {
+
+      const dates =
+        Object.keys(records).sort();
+
+
+      if (
+        dates.length > 0
+      ) {
+
+        /*
+          기존 기록을 최신 날짜부터 찾아서
+          마지막 정상값으로 사용한다.
+        */
+
+        const latestDate =
+          dates[dates.length - 1];
+
+
+        const latestRecord =
+          normalizeRecord(
+            records[latestDate]
+          );
+
+
+        if (
+          Number.isFinite(
+            latestRecord.temperature
+          )
+        ) {
+
+          lastKnownValue =
+            latestRecord.temperature;
+
+        }
+
+
+        if (
+          Number.isFinite(
+            latestRecord.humidity
+          )
+        ) {
+
+          lastKnownHumidity =
+            latestRecord.humidity;
+
+        }
+
+
+        lastKnownObsTime =
+          "이전 저장 기록";
+
+
+        /*
+          기존 기록 화면 표시
+        */
+
+        renderHistoryAndCompare(
+          getKSTDateString(
+            new Date()
+          ),
+          lastKnownValue
+        );
+
+      }
+
+
+      /*
+        첫 로딩 시 실제 API 호출
+      */
+
+      fetchData("real");
+
+    }
+
+  </script>
+
+</body>
+</html>
