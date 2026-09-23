@@ -21,10 +21,10 @@
 | **고정 검사 통과 수** | 10 / 10 | 10 / 10 |
 
 ## 3. 고정 소스 버전 쌍 (Commit Hash)
-* **AI A 시작:** [첫 커밋 해시 40자리]
-* **AI A 인계:** [과제 4 완성본 커밋 해시 40자리]
-* **AI B 시작:** [과제 4 완성본 커밋 해시와 동일]
-* **AI B 완료:** [습도/스피너 추가 완료 커밋 해시 40자리]
+* **AI A 시작:** [https://github.com/sangjun123562/my-portfolio/commit/eb67ed1ff5c40d36f4c0d60cb71e17ff2c863138]
+* **AI A 인계:** [https://sangjun123562.github.io/my-portfolio/weather]
+* **AI B 시작:** [https://sangjun123562.github.io/my-portfolio/weather]
+* **AI B 완료:** [https://github.com/sangjun123562/my-portfolio/commit/a006f64931ddbd559cc3f497e02833087e83e4b9]
 
 ## 4. 다음 작업의 도구 선택 기준
 > "초기 뼈대를 잡고 복잡한 에러 방어 규칙을 처음 설계할 때는 대화 맥락을 오래 기억하는 **AI A**를 사용하고, 잘 정리된 문서가 있는 상태에서 단일 기능을 빠르게 추가할 때는 코드 생성 속도가 빠르고 지시를 정확히 따르는 **AI B**를 선택하겠습니다."
