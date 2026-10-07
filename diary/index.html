@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>플랜두씨 다이어리</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase SDK v11 (ES Module) -->
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .badge-high { background-color: #fee2e2; color: #b91c1c; }
+    .badge-medium { background-color: #fef3c7; color: #b45309; }
+    .badge-low { background-color: #dcfce7; color: #15803d; }
+    .fade-in { animation: fadeIn 0.15s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-20 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- 과제 필수 상단 안내 배너 (T06-C82) -->
+  <header class="bg-amber-500 text-white px-4 py-2.5 text-center text-xs md:text-sm font-semibold shadow-sm sticky top-0 z-40 flex items-center justify-center gap-2">
+    <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+    </svg>
+    <span>지금은 로그인 없이 링크를 아는 사람은 누구나 볼 수 있습니다. 남이 봐도 괜찮은 내용만 넣으세요.</span>
+  </header>
+
+  <nav class="max-w-6xl mx-auto px-4 py-5 flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="w-2.5 h-6 bg-indigo-600 rounded-sm"></div>
+        <h1 class="text-xl md:text-2xl font-black tracking-tight text-slate-900">플랜두씨 다이어리</h1>
+        <span id="dbStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          🌐 클라우드 DB 연동됨
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">계획(Plan)을 세우고, 세부 할 일과 실행 기록(Do)을 남기며, 돌아보기(See)로 성장하는 순환 다이어리</p>
+    </div>
+    
+    <div class="flex flex-wrap items-center gap-2">
+      <button onclick="window.exportDataToFile()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 shadow-sm transition active:scale-95">
+        <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        전체 내보내기 (.json)
+      </button>
+      <button onclick="document.getElementById('importFileInput').click()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 shadow-sm transition active:scale-95">
+        <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        불러오기
+      </button>
+      <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="window.importDataFromFile(event)">
+      <button onclick="window.resetAllDataWithConfirm()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition active:scale-95">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        초기화
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 space-y-6">
+
+    <!-- 상단: 실행 성과 및 돌아보기 (See) 대시보드 -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+      <div class="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 mb-4 gap-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <h2 class="text-sm font-bold text-slate-800">실행 성과 및 돌아보기 (See)</h2>
+          <span class="text-[11px] bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded">💡 지표 숫자를 클릭하면 해당 할 일 목록으로 이동합니다</span>
+        </div>
+        <div class="text-xs text-slate-400">기준: <span class="text-slate-600 font-medium">한국 표준시 (KST)</span></div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <button onclick="window.drillDownFilter('all')" class="text-left p-3.5 rounded-lg border border-slate-200 bg-slate-50 hover:border-indigo-400 hover:bg-indigo-50/50 transition group cursor-pointer">
+          <div class="text-xs text-slate-500 group-hover:text-indigo-600 font-medium">총 할 일 수</div>
+          <div class="text-2xl font-black text-slate-800 mt-1" id="statPlanCount">0</div>
+          <div class="text-[11px] text-slate-400 mt-0.5" id="statScopeSubText">전체 대상</div>
+        </button>
+
+        <button onclick="window.drillDownFilter('completed')" class="text-left p-3.5 rounded-lg border border-emerald-100 bg-emerald-50/40 hover:border-emerald-400 hover:bg-emerald-50 transition group cursor-pointer">
+          <div class="text-xs text-emerald-700 font-medium">완료됨</div>
+          <div class="text-2xl font-black text-emerald-800 mt-1" id="statCompletedCount">0</div>
+          <div class="text-[11px] text-emerald-600/80 mt-0.5">목표 달성 건수</div>
+        </button>
+
+        <button onclick="window.drillDownFilter('delayed')" class="text-left p-3.5 rounded-lg border border-rose-100 bg-rose-50/40 hover:border-rose-400 hover:bg-rose-50 transition group cursor-pointer">
+          <div class="text-xs text-rose-700 font-medium">지연 발생</div>
+          <div class="text-2xl font-black text-rose-800 mt-1" id="statDelayedCount">0</div>
+          <div class="text-[11px] text-rose-600/80 mt-0.5">마감 초과 미완료</div>
+        </button>
+
+        <button onclick="window.drillDownFilter('blocked')" class="text-left p-3.5 rounded-lg border border-amber-100 bg-amber-50/40 hover:border-amber-400 hover:bg-amber-50 transition group cursor-pointer">
+          <div class="text-xs text-amber-700 font-medium">막힘 발생</div>
+          <div class="text-2xl font-black text-amber-800 mt-1" id="statBlockedCount">0</div>
+          <div class="text-[11px] text-amber-600/80 mt-0.5">원인 기록 건수</div>
+        </button>
+
+        <div class="p-3.5 rounded-lg border border-slate-200 bg-slate-50">
+          <div class="text-xs text-slate-500 font-medium">예상 vs 실제 시간</div>
+          <div class="text-base font-extrabold text-slate-800 mt-1 flex items-baseline gap-1">
+            <span id="statEstTime">0h</span> <span class="text-xs font-normal text-slate-400">/</span> <span id="statActualTime" class="text-indigo-600">0h</span>
+          </div>
+          <div class="text-[11px] text-slate-500 mt-0.5">차이: <strong id="statDiffTime" class="font-bold">0h</strong></div>
+        </div>
+
+        <button onclick="window.drillDownFilter('records')" class="text-left p-3.5 rounded-lg border border-purple-100 bg-purple-50/40 hover:border-purple-400 hover:bg-purple-50 transition group cursor-pointer">
+          <div class="text-xs text-purple-700 font-medium">총 실행 기록</div>
+          <div class="text-2xl font-black text-purple-800 mt-1" id="statExecutionCount">0</div>
+          <div class="text-[11px] text-purple-600/80 mt-0.5">작성된 실행 로그</div>
+        </button>
+      </div>
+
+      <!-- 돌아보기에서 다음 계획으로 피드백 환류 -->
+      <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-50/80 p-3.5 rounded-lg">
+        <div class="flex-1">
+          <label class="block text-xs font-bold text-slate-700 mb-1">돌아보며 느낀 고칠 점 (다음 계획으로 넘길 한 줄)</label>
+          <input type="text" id="reflectionLessonInput" placeholder="예: 작업 단위를 1시간 이하로 쪼개고 사전 준비를 철저히 하기" class="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+        </div>
+        <div class="flex items-end">
+          <button onclick="window.passToNextPlan()" class="w-full md:w-auto px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm transition active:scale-95">
+            새 계획으로 넘기기 →
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- 좌측: 내 계획 목록 (Plan) -->
+      <div class="lg:col-span-4 space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+              <h2 class="text-sm font-bold text-slate-900">내 계획 목록</h2>
+            </div>
+            <button onclick="window.openPlanModal(false)" class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm transition active:scale-95">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              새 계획 추가
+            </button>
+          </div>
+
+          <!-- 계획 전체 보기 필터 버튼 -->
+          <div class="mb-3">
+            <button id="btnViewAllPlans" onclick="window.selectPlan(null)" class="w-full py-1.5 px-3 rounded-lg text-xs font-bold border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-left flex items-center justify-between">
+              <span>📋 모든 계획의 할 일 전체 보기</span>
+              <span id="allPlansBadgeCount" class="text-[11px] bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full font-semibold">0</span>
+            </button>
+          </div>
+
+          <!-- 계획 리스트 컨테이너 -->
+          <div id="planListContainer" class="space-y-3">
+            <!-- 동적으로 렌더링 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 우측: 선택된 계획의 세부 할 일과 실행 기록(Do) -->
+      <div class="lg:col-span-8 space-y-4" id="taskSectionAnchor">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div class="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 mb-4 gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                <h2 class="text-sm font-bold text-slate-900" id="currentPlanScopeTitle">할 일 & 실행 로그</h2>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5" id="currentPlanScopeSub">좌측에서 계획을 선택하면 해당 계획에 묶인 세부 할 일들을 집중 관리합니다.</p>
+            </div>
+            <button onclick="window.openTaskModal(false)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm transition active:scale-95">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              현재 계획에 할 일 추가
+            </button>
+          </div>
+
+          <!-- 검색, 필터 및 명시적 정렬 툴바 -->
+          <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-3 mb-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">할 일 검색</label>
+                <input type="text" id="taskSearchInput" oninput="window.renderTasks()" placeholder="제목 또는 태그..." class="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">진행 상태</label>
+                <select id="taskStatusFilter" onchange="window.renderTasks()" class="w-full text-xs px-2 py-1.5 bg-white border border-slate-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:outline-none font-medium">
+                  <option value="ALL">전체 보기</option>
+                  <option value="IN_PROGRESS">진행 중</option>
+                  <option value="COMPLETED">완료됨</option>
+                  <option value="DELAYED">지연됨 (마감 초과)</option>
+                  <option value="BLOCKED">막힘 발생 건</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">태그 선택</label>
+                <select id="taskTagFilter" onchange="window.renderTasks()" class="w-full text-xs px-2 py-1.5 bg-white border border-slate-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:outline-none font-medium">
+                  <option value="ALL">전체 태그</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">정렬 기준</label>
+                <select id="taskSortSelect" onchange="window.renderTasks()" class="w-full text-xs px-2 py-1.5 bg-white border border-slate-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:outline-none font-semibold text-slate-700">
+                  <option value="dueDate_asc">마감일 빠른 순 (오름차순)</option>
+                  <option value="dueDate_desc">마감일 늦은 순 (내림차순)</option>
+                  <option value="priority_desc">우선순위 높은 순 (높음 → 낮음)</option>
+                  <option value="created_desc">최신 등록 순</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 활성 정렬 기준 표시 -->
+            <div class="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-200">
+              <div>적용된 정렬: <strong id="activeSortLabel" class="text-blue-700 font-bold">마감일 빠른 순 (오름차순)</strong></div>
+              <div id="filterResultCount" class="text-slate-600 font-semibold">총 0개 표시 중</div>
+            </div>
+          </div>
+
+          <!-- 할 일 카드 리스트 -->
+          <div id="taskListContainer" class="space-y-3">
+            <!-- 동적으로 렌더링 -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal 1: 계획 등록 / 수정 모달 -->
+  <div id="planModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 fade-in">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 id="planModalTitle" class="text-base font-bold text-slate-900">계획 등록</h3>
+        <button onclick="window.closeModal('planModal')" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+      <form id="planForm" onsubmit="window.handlePlanSubmit(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="planEditId">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">계획 제목 *</label>
+          <input type="text" id="planTitle" required placeholder="예: 네트워크 관리사 2급 자격증 취득" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">시작일 *</label>
+            <input type="date" id="planStartDate" required class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">종료일 *</label>
+            <input type="date" id="planEndDate" required class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">우선순위 *</label>
+            <select id="planPriority" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+              <option value="HIGH">높음 (High)</option>
+              <option value="MEDIUM" selected>보통 (Medium)</option>
+              <option value="LOW">낮음 (Low)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">예상 시간 (시간 단위) *</label>
+            <input type="number" id="planEstHours" min="0.5" step="0.5" required placeholder="예: 40" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">성공 기준 (완료 조건) *</label>
+          <textarea id="planSuccessCriteria" rows="2" required placeholder="예: 필기 및 실기 기출 3회독 후 모의고사 75점 이상 득점" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="window.closeModal('planModal')" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-semibold">취소</button>
+          <button type="submit" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: 계획 수정 이력 모달 (T06-C08 원본 보존) -->
+  <div id="historyModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-xl w-full p-6 space-y-4 fade-in max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">계획 변경 이력</h3>
+          <p class="text-xs text-slate-500">처음 수립한 원본 계획과 수정 전 스냅샷이 누적 보존됩니다.</p>
+        </div>
+        <button onclick="window.closeModal('historyModal')" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+      <div id="historyContainer" class="space-y-3 text-xs">
+        <!-- 동적으로 렌더링 -->
+      </div>
+      <div class="flex justify-end pt-2 border-t border-slate-100">
+        <button onclick="window.closeModal('historyModal')" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-md font-semibold">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: 할 일 등록 / 수정 모달 -->
+  <div id="taskModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 fade-in">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 id="taskModalTitle" class="text-base font-bold text-slate-900">할 일 등록</h3>
+        <button onclick="window.closeModal('taskModal')" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+      <form id="taskForm" onsubmit="window.handleTaskSubmit(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="taskEditId">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">상위 계획 선택 *</label>
+          <select id="taskPlanId" required class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+            <!-- 동적으로 렌더링 -->
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">할 일 제목 *</label>
+          <input type="text" id="taskTitle" required placeholder="예: OSI 7계층 및 TCP/IP 핵심 요약" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">마감일 *</label>
+            <input type="date" id="taskDueDate" required class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">우선순위 *</label>
+            <select id="taskPriority" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+              <option value="HIGH">높음 (High)</option>
+              <option value="MEDIUM" selected>보통 (Medium)</option>
+              <option value="LOW">낮음 (Low)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">태그 (쉼표로 구분) *</label>
+            <input type="text" id="taskTags" required placeholder="예: 네트워크, 이론, 필기" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">예상 소요 시간 (시간 단위) *</label>
+            <input type="number" id="taskEstHours" min="0.25" step="0.25" required placeholder="예: 2.0" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="window.closeModal('taskModal')" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-semibold">취소</button>
+          <button type="submit" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-bold">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: 실제 한 일 기록 (Do 실행 기록) 등록 및 수정 모달 -->
+  <div id="executionModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 fade-in">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <div>
+          <h3 id="executionModalTitle" class="text-base font-bold text-slate-900">실제 실행 기록 작성</h3>
+          <p id="executionTaskTitlePreview" class="text-xs text-blue-600 font-semibold"></p>
+        </div>
+        <button onclick="window.closeModal('executionModal')" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+      <form id="executionForm" onsubmit="window.handleExecutionSubmit(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="execEditId">
+        <input type="hidden" id="execTaskId">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">시작 시각 *</label>
+            <input type="datetime-local" id="execStartTime" required class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">끝난 시각 *</label>
+            <input type="datetime-local" id="execEndTime" required onchange="window.calculateAutoDuration()" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">실제로 걸린 시간 (시간 단위) *</label>
+          <input type="number" id="execActualHours" min="0.1" step="0.1" required placeholder="예: 2.0" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-semibold">
+          <p class="text-[10px] text-slate-400 mt-0.5">※ 시작과 종료 시각을 지정하면 자동 계산되며 직접 수정도 가능합니다.</p>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">막혔던 이유 (Blocker)</label>
+          <textarea id="execBlocker" rows="2" placeholder="없으면 비워두거나, 진행 중 막혔던 원인을 적으세요. (예: 서브넷 마스크 계산 혼동 등)" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        </div>
+        <div id="execMarkCompletedWrapper" class="flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+          <input type="checkbox" id="execMarkCompleted" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" checked>
+          <label for="execMarkCompleted" class="font-bold text-slate-700 cursor-pointer">이 기록을 저장하면서 해당 할 일을 [완료됨]으로 변경</label>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="window.closeModal('executionModal')" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-semibold">취소</button>
+          <button type="submit" id="saveExecutionBtn" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-bold">기록 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast 알림 컴포넌트 -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl text-xs font-semibold transform translate-y-20 opacity-0 transition duration-300 z-50 flex items-center gap-2">
+    <span id="toastMsg">알림 메시지</span>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      getDoc, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // 사용자 등록 Firebase 프로젝트 설정 키
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjyu3AF4JJATmP1k2O0pSv6dj-XcUNB-E",
+      authDomain: "pds-diary-a9b33.firebaseapp.com",
+      projectId: "pds-diary-a9b33",
+      storageBucket: "pds-diary-a9b33.firebasestorage.app",
+      messagingSenderId: "677108739832",
+      appId: "1:677108739832:web:b7660943dd8ac823f3d50d"
+    };
+
+    // Firebase 앱 및 Firestore 인스턴스 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 공용 다이어리 데이터 문서 참조 (모든 방문자가 실시간으로 공유하고 볼 수 있는 공유 문서)
+    const DIARY_DOC_REF = doc(db, 'pds_diary_data', 'main_workspace');
+
+    // 전역 상태
+    window.state = {
+      selectedPlanId: null,
+      plans: [],
+      tasks: [],
+      executions: [],
+      reflections: []
+    };
+
+    // 클라우드 Firestore 실시간 구독 (온스냅샷)
+    onSnapshot(DIARY_DOC_REF, (snapshot) => {
+      if (snapshot.exists()) {
+        const cloudData = snapshot.data();
+        window.state.plans = cloudData.plans || [];
+        window.state.tasks = cloudData.tasks || [];
+        window.state.executions = cloudData.executions || [];
+        window.state.reflections = cloudData.reflections || [];
+
+        // 선택된 계획이 없거나 삭제되었을 경우 첫 번째 계획 선택
+        if (window.state.plans.length > 0 && (!window.state.selectedPlanId || !window.state.plans.some(p => p.id === window.state.selectedPlanId))) {
+          window.state.selectedPlanId = window.state.plans[0].id;
+        }
+
+        window.renderAll();
+        updateDbBadge(true);
+      } else {
+        // 첫 접속 시 클라우드 문서 생성
+        saveToCloud();
+      }
+    }, (error) => {
+      console.warn("Firestore 실시간 동기화 오류 (로컬 모드로 전환):", error);
+      updateDbBadge(false);
+      // 오프라인/권한 오류 대비 로컬 백업 로드
+      loadLocalFallback();
+    });
+
+    // 클라우드 저장 함수
+    async function saveToCloud() {
+      try {
+        await setDoc(DIARY_DOC_REF, {
+          plans: window.state.plans || [],
+          tasks: window.state.tasks || [],
+          executions: window.state.executions || [],
+          reflections: window.state.reflections || [],
+          updatedAt: new Date().toISOString()
+        });
+        localStorage.setItem('PDS_DIARY_OFFLINE_CACHE', JSON.stringify(window.state));
+        updateDbBadge(true);
+      } catch (err) {
+        console.error("클라우드 저장 실패:", err);
+        localStorage.setItem('PDS_DIARY_OFFLINE_CACHE', JSON.stringify(window.state));
+        updateDbBadge(false);
+        window.showToast("클라우드 저장 지연 (로컬 캐시에 보관됨)");
+      }
+    }
+    window.saveData = saveToCloud;
+
+    function updateDbBadge(isOnline) {
+      const badge = document.getElementById('dbStatusBadge');
+      if (!badge) return;
+      if (isOnline) {
+        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full";
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>🌐 클라우드 DB 연동됨';
+      } else {
+        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold bg-amber-100 text-amber-800 rounded-full";
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500"></span>로컬 오프라인 모드';
+      }
+    }
+
+    function loadLocalFallback() {
+      try {
+        const cached = localStorage.getItem('PDS_DIARY_OFFLINE_CACHE');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          window.state.plans = parsed.plans || [];
+          window.state.tasks = parsed.tasks || [];
+          window.state.executions = parsed.executions || [];
+          window.state.reflections = parsed.reflections || [];
+          if (window.state.plans.length > 0 && !window.state.selectedPlanId) {
+            window.state.selectedPlanId = window.state.plans[0].id;
+          }
+          window.renderAll();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  </script>
+
+  <script>
+    window.resetAllDataWithConfirm = function() {
+      if (!confirm('정말로 클라우드 DB의 모든 계획과 기록을 초기화하시겠습니까?')) return;
+      window.state = { selectedPlanId: null, plans: [], tasks: [], executions: [], reflections: [] };
+      if (typeof window.saveData === 'function') window.saveData();
+      window.renderAll();
+      window.showToast('클라우드 다이어리 데이터가 초기화되었습니다.');
+    };
+
+    window.sanitize = function(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    window.showToast = function(message) {
+      var toast = document.getElementById('toast');
+      var toastMsg = document.getElementById('toastMsg');
+      if (!toast || !toastMsg) return;
+      toastMsg.textContent = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(function() {
+        toast.classList.add('translate-y-20', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 3000);
+    };
+
+    window.getSeoulTodayString = function() {
+      var now = new Date();
+      var utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      var kstGap = 9 * 60 * 60000;
+      var kstDate = new Date(utc + kstGap);
+      return kstDate.toISOString().slice(0, 10);
+    };
+
+    window.calculateStats = function() {
+      var currentPlanId = window.state.selectedPlanId;
+      var allTasks = (window.state.tasks || []).filter(function(t) { return !t.isDeleted; });
+      
+      var targetTasks = currentPlanId 
+        ? allTasks.filter(function(t) { return t.planId === currentPlanId; }) 
+        : allTasks;
+
+      var todayStr = window.getSeoulTodayString();
+
+      var planCount = targetTasks.length;
+      var completedTasks = targetTasks.filter(function(t) { return t.status === 'COMPLETED'; });
+      var completedCount = completedTasks.length;
+
+      var delayedTasks = targetTasks.filter(function(t) {
+        if (t.status === 'COMPLETED') return false;
+        return t.dueDate < todayStr;
+      });
+      var delayedCount = delayedTasks.length;
+
+      var targetTaskIds = new Set(targetTasks.map(function(t) { return t.id; }));
+
+      var taskIdsWithBlocker = new Set();
+      (window.state.executions || []).forEach(function(ex) {
+        if (targetTaskIds.has(ex.taskId) && ex.blocker && ex.blocker.trim().length > 0) {
+          taskIdsWithBlocker.add(ex.taskId);
+        }
+      });
+      var blockedCount = taskIdsWithBlocker.size;
+
+      var totalEstHours = targetTasks.reduce(function(sum, t) { return sum + (Number(t.estHours) || 0); }, 0);
+      
+      var totalActualHours = (window.state.executions || [])
+        .filter(function(ex) { return targetTaskIds.has(ex.taskId); })
+        .reduce(function(sum, ex) { return sum + (Number(ex.actualHours) || 0); }, 0);
+
+      var diffHours = totalActualHours - totalEstHours;
+      var executionCount = (window.state.executions || []).filter(function(ex) { return targetTaskIds.has(ex.taskId); }).length;
+
+      return {
+        isScopeFiltered: !!currentPlanId,
+        planCount: planCount,
+        completedCount: completedCount,
+        delayedCount: delayedCount,
+        blockedCount: blockedCount,
+        totalEstHours: totalEstHours.toFixed(1),
+        totalActualHours: totalActualHours.toFixed(1),
+        diffHours: diffHours.toFixed(1),
+        executionCount: executionCount
+      };
+    };
+
+    window.renderSummary = function() {
+      var stats = window.calculateStats();
+      document.getElementById('statPlanCount').textContent = stats.planCount;
+      document.getElementById('statCompletedCount').textContent = stats.completedCount;
+      document.getElementById('statDelayedCount').textContent = stats.delayedCount;
+      document.getElementById('statBlockedCount').textContent = stats.blockedCount;
+      document.getElementById('statEstTime').textContent = stats.totalEstHours + 'h';
+      document.getElementById('statActualTime').textContent = stats.totalActualHours + 'h';
+      
+      var scopeSub = document.getElementById('statScopeSubText');
+      if (scopeSub) {
+        scopeSub.textContent = stats.isScopeFiltered ? '선택된 계획 대상' : '등록된 할 일 전체';
+      }
+
+      var diffElem = document.getElementById('statDiffTime');
+      var diffNum = parseFloat(stats.diffHours);
+      if (diffNum > 0) {
+        diffElem.textContent = '+' + stats.diffHours + 'h 초과';
+        diffElem.className = 'font-bold text-rose-600';
+      } else if (diffNum < 0) {
+        diffElem.textContent = stats.diffHours + 'h 절감';
+        diffElem.className = 'font-bold text-emerald-600';
+      } else {
+        diffElem.textContent = '0h (일치)';
+        diffElem.className = 'font-bold text-slate-600';
+      }
+
+      document.getElementById('statExecutionCount').textContent = stats.executionCount;
+
+      var allTasksCount = (window.state.tasks || []).filter(function(t) { return !t.isDeleted; }).length;
+      var allBadge = document.getElementById('allPlansBadgeCount');
+      if (allBadge) allBadge.textContent = allTasksCount;
+    };
+
+    window.drillDownFilter = function(category) {
+      var statusSelect = document.getElementById('taskStatusFilter');
+      var searchInput = document.getElementById('taskSearchInput');
+      if (searchInput) searchInput.value = '';
+
+      if (category === 'all') {
+        statusSelect.value = 'ALL';
+      } else if (category === 'completed') {
+        statusSelect.value = 'COMPLETED';
+      } else if (category === 'delayed') {
+        statusSelect.value = 'DELAYED';
+      } else if (category === 'blocked') {
+        statusSelect.value = 'BLOCKED';
+      } else if (category === 'records') {
+        statusSelect.value = 'ALL';
+      }
+
+      window.renderTasks();
+
+      var taskSection = document.getElementById('taskSectionAnchor');
+      if (taskSection) {
+        taskSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      window.showToast('해당 조건의 목록으로 필터링되었습니다.');
+    };
+
+    window.selectPlan = function(planId) {
+      window.state.selectedPlanId = planId;
+      window.renderPlans();
+      window.renderTasks();
+      window.renderSummary();
+    };
+
+    window.renderPlans = function() {
+      var container = document.getElementById('planListContainer');
+      var plans = window.state.plans || [];
+      var activeId = window.state.selectedPlanId;
+
+      var btnAll = document.getElementById('btnViewAllPlans');
+      if (btnAll) {
+        if (!activeId) {
+          btnAll.className = 'w-full py-2 px-3 rounded-lg text-xs font-bold border-2 border-indigo-600 bg-indigo-50 text-indigo-900 shadow-sm transition text-left flex items-center justify-between';
+        } else {
+          btnAll.className = 'w-full py-1.5 px-3 rounded-lg text-xs font-semibold border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition text-left flex items-center justify-between';
+        }
+      }
+
+      if (plans.length === 0) {
+        container.innerHTML = 
+          '<div class="py-12 px-4 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl space-y-2">' +
+            '<p class="font-medium text-slate-500">등록된 계획이 없습니다.</p>' +
+            '<p class="text-[11px]">우측 상단의 [+ 새 계획 추가]를 눌러 첫 목표를 세워보세요!</p>' +
+          '</div>';
+        return;
+      }
+
+      container.innerHTML = plans.map(function(plan) {
+        var isSelected = plan.id === activeId;
+        var historyCount = (plan.history || []).length;
+        var priorityBadge = plan.priority === 'HIGH' ? 'badge-high' : plan.priority === 'MEDIUM' ? 'badge-medium' : 'badge-low';
+        var priorityLabel = plan.priority === 'HIGH' ? '높음' : plan.priority === 'MEDIUM' ? '보통' : '낮음';
+
+        var planTasks = (window.state.tasks || []).filter(function(t) { return !t.isDeleted && t.planId === plan.id; });
+        var taskCount = planTasks.length;
+        var completedCount = planTasks.filter(function(t) { return t.status === 'COMPLETED'; }).length;
+
+        var borderClass = isSelected 
+          ? 'border-2 border-indigo-600 bg-indigo-50/40 shadow-sm ring-2 ring-indigo-500/20' 
+          : 'border border-slate-200 bg-white hover:border-slate-300';
+
+        return (
+          '<div onclick="window.selectPlan(\'' + plan.id + '\')" class="cursor-pointer ' + borderClass + ' rounded-xl p-3.5 transition space-y-2.5">' +
+            '<div class="flex items-start justify-between gap-2">' +
+              '<div class="space-y-1">' +
+                '<div class="flex items-center gap-1.5 flex-wrap">' +
+                  '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ' + priorityBadge + '">' + priorityLabel + '</span>' +
+                  (isSelected ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white">선택됨</span>' : '') +
+                  '<span class="text-[11px] text-slate-500 font-semibold">예상 ' + plan.estHours + 'h</span>' +
+                '</div>' +
+                '<h3 class="text-xs font-bold ' + (isSelected ? 'text-indigo-950 font-extrabold' : 'text-slate-900') + '">' + window.sanitize(plan.title) + '</h3>' +
+              '</div>' +
+              '<div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">' +
+                '<button onclick="event.stopPropagation(); window.editPlan(\'' + plan.id + '\')" class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded transition active:scale-95" title="계획 수정">' +
+                  '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>' +
+                  '수정' +
+                '</button>' +
+                '<button onclick="event.stopPropagation(); window.viewPlanHistory(\'' + plan.id + '\')" class="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition" title="수정 이력 확인">' +
+                  '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+                '</button>' +
+                '<button onclick="event.stopPropagation(); window.deletePlan(\'' + plan.id + '\')" class="p-1 text-rose-400 hover:text-rose-600 rounded hover:bg-rose-50 transition" title="계획 삭제">' +
+                  '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+                '</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="text-[11px] space-y-1 bg-white/80 p-2.5 rounded-lg border border-slate-100 text-slate-600">' +
+              '<div><strong class="text-slate-500">기간:</strong> ' + window.sanitize(plan.startDate) + ' ~ ' + window.sanitize(plan.endDate) + '</div>' +
+              '<div><strong class="text-slate-500">성공 기준:</strong> ' + window.sanitize(plan.successCriteria) + '</div>' +
+            '</div>' +
+            '<div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">' +
+              '<span>소속 할 일: <strong class="text-indigo-700 font-bold">' + taskCount + '개</strong> (' + completedCount + '개 완료)</span>' +
+              '<span class="text-[10px] text-slate-400">이력 ' + historyCount + '건</span>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    };
+
+    window.openPlanModal = function(isEdit) {
+      document.getElementById('planModalTitle').textContent = isEdit ? '계획 수정' : '새 계획 등록';
+      if (!isEdit) {
+        document.getElementById('planEditId').value = '';
+        document.getElementById('planForm').reset();
+        document.getElementById('planStartDate').value = window.getSeoulTodayString();
+      }
+      document.getElementById('planModal').classList.remove('hidden');
+    };
+
+    window.editPlan = function(planId) {
+      var plan = (window.state.plans || []).find(function(p) { return p.id === planId; });
+      if (!plan) return;
+      document.getElementById('planModalTitle').textContent = '계획 수정';
+      document.getElementById('planEditId').value = plan.id;
+      document.getElementById('planTitle').value = plan.title || '';
+      document.getElementById('planStartDate').value = plan.startDate || window.getSeoulTodayString();
+      document.getElementById('planEndDate').value = plan.endDate || window.getSeoulTodayString();
+      document.getElementById('planPriority').value = plan.priority || 'MEDIUM';
+      document.getElementById('planEstHours').value = plan.estHours || '';
+      document.getElementById('planSuccessCriteria').value = plan.successCriteria || '';
+      document.getElementById('planModal').classList.remove('hidden');
+    };
+
+    window.deletePlan = function(planId) {
+      var plan = (window.state.plans || []).find(function(p) { return p.id === planId; });
+      if (!plan) return;
+      if (!confirm('정말로 "' + plan.title + '" 계획을 삭제하시겠습니까?\n(해당 계획에 속한 모든 할 일과 실행 기록도 함께 정리됩니다)')) return;
+
+      window.state.plans = (window.state.plans || []).filter(function(p) { return p.id !== planId; });
+
+      var removedTaskIds = new Set();
+      (window.state.tasks || []).forEach(function(t) {
+        if (t.planId === planId) {
+          t.isDeleted = true;
+          removedTaskIds.add(t.id);
+        }
+      });
+
+      window.state.executions = (window.state.executions || []).filter(function(ex) {
+        return !removedTaskIds.has(ex.taskId);
+      });
+
+      if (window.state.selectedPlanId === planId) {
+        window.state.selectedPlanId = (window.state.plans.length > 0) ? window.state.plans[0].id : null;
+      }
+
+      if (typeof window.saveData === 'function') window.saveData();
+      window.populatePlanSelectOptions();
+      window.populateTagFilterOptions();
+      window.renderAll();
+      window.showToast('계획이 삭제되었습니다.');
+    };
+
+    window.handlePlanSubmit = function(event) {
+      event.preventDefault();
+      var editId = document.getElementById('planEditId').value;
+      var title = document.getElementById('planTitle').value.trim();
+      var startDate = document.getElementById('planStartDate').value;
+      var endDate = document.getElementById('planEndDate').value;
+      var priority = document.getElementById('planPriority').value;
+      var estHours = parseFloat(document.getElementById('planEstHours').value);
+      var successCriteria = document.getElementById('planSuccessCriteria').value.trim();
+
+      if (editId) {
+        var planIndex = (window.state.plans || []).findIndex(function(p) { return p.id === editId; });
+        if (planIndex !== -1) {
+          var oldPlan = window.state.plans[planIndex];
+          if (!oldPlan.history) oldPlan.history = [];
+          
+          oldPlan.history.push({
+            revision: oldPlan.history.length + 1,
+            title: oldPlan.title,
+            startDate: oldPlan.startDate,
+            endDate: oldPlan.endDate,
+            priority: oldPlan.priority,
+            estHours: oldPlan.estHours,
+            successCriteria: oldPlan.successCriteria,
+            modifiedAt: new Date().toISOString(),
+            note: '계획 수정 전 스냅샷'
+          });
+
+          oldPlan.title = title;
+          oldPlan.startDate = startDate;
+          oldPlan.endDate = endDate;
+          oldPlan.priority = priority;
+          oldPlan.estHours = estHours;
+          oldPlan.successCriteria = successCriteria;
+          oldPlan.updatedAt = new Date().toISOString();
+          window.showToast('계획이 수정되었으며, 이전 계획이 이력에 보존되었습니다.');
+        }
+      } else {
+        var newId = 'PLAN-' + String((window.state.plans || []).length + 1).padStart(3, '0');
+        if (!window.state.plans) window.state.plans = [];
+        window.state.plans.push({
+          id: newId,
+          title: title,
+          startDate: startDate,
+          endDate: endDate,
+          priority: priority,
+          estHours: estHours,
+          successCriteria: successCriteria,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          history: [
+            {
+              revision: 1,
+              title: title,
+              startDate: startDate,
+              endDate: endDate,
+              priority: priority,
+              estHours: estHours,
+              successCriteria: successCriteria,
+              modifiedAt: new Date().toISOString(),
+              note: '최초 수립'
+            }
+          ]
+        });
+        window.state.selectedPlanId = newId;
+        window.showToast('새 계획이 등록되었습니다.');
+      }
+
+      if (typeof window.saveData === 'function') window.saveData();
+      window.populatePlanSelectOptions();
+      window.renderPlans();
+      window.renderTasks();
+      window.closeModal('planModal');
+    };
+
+    window.viewPlanHistory = function(planId) {
+      var plan = (window.state.plans || []).find(function(p) { return p.id === planId; });
+      if (!plan) return;
+      var historyContainer = document.getElementById('historyContainer');
+      var historyList = plan.history || [];
+
+      historyContainer.innerHTML = historyList.map(function(h) {
+        return (
+          '<div class="p-3 border border-slate-200 rounded-lg bg-slate-50 space-y-1.5">' +
+            '<div class="flex items-center justify-between text-[11px]">' +
+              '<span class="font-bold text-indigo-700">기록 #' + h.revision + ' (' + window.sanitize(h.note || '이력') + ')</span>' +
+              '<span class="text-slate-400 font-medium">' + new Date(h.modifiedAt).toLocaleString('ko-KR') + '</span>' +
+            '</div>' +
+            '<div class="font-bold text-slate-800 text-xs">' + window.sanitize(h.title) + '</div>' +
+            '<div class="text-[11px] text-slate-600">' +
+              '기간: ' + window.sanitize(h.startDate) + ' ~ ' + window.sanitize(h.endDate) + ' | 우선순위: ' + h.priority + ' | 예상: ' + h.estHours + 'h' +
+            '</div>' +
+            '<div class="text-[11px] text-slate-600 bg-white p-2 rounded border border-slate-200">' +
+              '<strong>성공 기준:</strong> ' + window.sanitize(h.successCriteria) +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+
+      document.getElementById('historyModal').classList.remove('hidden');
+    };
+
+    window.renderTasks = function() {
+      var listContainer = document.getElementById('taskListContainer');
+      var searchVal = document.getElementById('taskSearchInput').value.trim().toLowerCase();
+      var statusVal = document.getElementById('taskStatusFilter').value;
+      var tagVal = document.getElementById('taskTagFilter').value;
+      var sortVal = document.getElementById('taskSortSelect').value;
+
+      var sortSelectElem = document.getElementById('taskSortSelect');
+      var activeSortText = sortSelectElem.options[sortSelectElem.selectedIndex].text;
+      document.getElementById('activeSortLabel').textContent = activeSortText;
+
+      var todayStr = window.getSeoulTodayString();
+
+      var currentPlanId = window.state.selectedPlanId;
+      var activePlan = currentPlanId ? (window.state.plans || []).find(function(p) { return p.id === currentPlanId; }) : null;
+
+      var titleElem = document.getElementById('currentPlanScopeTitle');
+      var subElem = document.getElementById('currentPlanScopeSub');
+      if (activePlan) {
+        titleElem.innerHTML = '🎯 <span class="text-blue-700 font-black">[' + window.sanitize(activePlan.title) + ']</span> 의 할 일 & 실행 로그';
+        subElem.textContent = '이 계획에 소속된 세부 할 일과 실제 수행한 실행 기록(Do)입니다.';
+      } else {
+        titleElem.textContent = '📋 전체 계획의 할 일 & 실행 로그';
+        subElem.textContent = '좌측에서 특정 계획을 선택하면 해당 계획의 할 일만 집중하여 모아볼 수 있습니다.';
+      }
+
+      var taskIdsWithBlocker = new Set();
+      (window.state.executions || []).forEach(function(ex) {
+        if (ex.blocker && ex.blocker.trim().length > 0) {
+          taskIdsWithBlocker.add(ex.taskId);
+        }
+      });
+
+      var filtered = (window.state.tasks || []).filter(function(t) { return !t.isDeleted; });
+
+      if (currentPlanId) {
+        filtered = filtered.filter(function(t) { return t.planId === currentPlanId; });
+      }
+
+      if (searchVal) {
+        filtered = filtered.filter(function(t) {
+          return t.title.toLowerCase().indexOf(searchVal) !== -1 || 
+            t.tags.some(function(tag) { return tag.toLowerCase().indexOf(searchVal) !== -1; });
+        });
+      }
+
+      if (statusVal === 'IN_PROGRESS') {
+        filtered = filtered.filter(function(t) { return t.status !== 'COMPLETED'; });
+      } else if (statusVal === 'COMPLETED') {
+        filtered = filtered.filter(function(t) { return t.status === 'COMPLETED'; });
+      } else if (statusVal === 'DELAYED') {
+        filtered = filtered.filter(function(t) { return t.status !== 'COMPLETED' && t.dueDate < todayStr; });
+      } else if (statusVal === 'BLOCKED') {
+        filtered = filtered.filter(function(t) { return taskIdsWithBlocker.has(t.id); });
+      }
+
+      if (tagVal !== 'ALL') {
+        filtered = filtered.filter(function(t) { return t.tags.indexOf(tagVal) !== -1; });
+      }
+
+      filtered.sort(function(a, b) {
+        if (sortVal === 'dueDate_asc') {
+          if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+          return a.id.localeCompare(b.id);
+        } else if (sortVal === 'dueDate_desc') {
+          if (a.dueDate !== b.dueDate) return b.dueDate.localeCompare(a.dueDate);
+          return b.id.localeCompare(a.id);
+        } else if (sortVal === 'priority_desc') {
+          var score = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+          if (score[b.priority] !== score[a.priority]) return score[b.priority] - score[a.priority];
+          return a.dueDate.localeCompare(b.dueDate);
+        } else if (sortVal === 'created_desc') {
+          return (b.createdAt || '').localeCompare(a.createdAt || '');
+        }
+        return 0;
+      });
+
+      document.getElementById('filterResultCount').textContent = '총 ' + filtered.length + '개 표시 중';
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = 
+          '<div class="py-12 text-center text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-1">' +
+            '<p class="font-medium text-slate-500">표시할 할 일이 없습니다.</p>' +
+            '<p class="text-[11px]">[+ 현재 계획에 할 일 추가] 버튼을 눌러 작업을 등록해보세요.</p>' +
+          '</div>';
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(function(task) {
+        var isDone = task.status === 'COMPLETED';
+        var isDelayed = !isDone && task.dueDate < todayStr;
+        var taskExecutions = (window.state.executions || []).filter(function(e) { return e.taskId === task.id; });
+        var hasBlocker = taskExecutions.some(function(e) { return e.blocker && e.blocker.trim().length > 0; });
+        var priorityBadge = task.priority === 'HIGH' ? 'badge-high' : task.priority === 'MEDIUM' ? 'badge-medium' : 'badge-low';
+        var priorityLabel = task.priority === 'HIGH' ? '높음' : task.priority === 'MEDIUM' ? '보통' : '낮음';
+
+        var parentPlan = (window.state.plans || []).find(function(p) { return p.id === task.planId; });
+        var parentPlanTitle = parentPlan ? parentPlan.title : '미지정 계획';
+
+        var cardBg = isDone ? 'border-emerald-200 bg-emerald-50/20' : isDelayed ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200 bg-white';
+
+        var execLogsHtml = '';
+        if (taskExecutions.length > 0) {
+          execLogsHtml = 
+            '<div class="mt-3 pt-3 border-t border-dashed border-slate-200 space-y-2">' +
+              '<div class="text-[11px] font-bold text-slate-700 flex items-center justify-between">' +
+                '<span class="flex items-center gap-1.5">' +
+                  '<svg class="w-3.5 h-3.5 text-purple-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/></svg>' +
+                  '실행 로그 (' + taskExecutions.length + '건)' +
+                '</span>' +
+                '<span class="text-[10px] text-slate-400">실제 소요 합계: ' + taskExecutions.reduce(function(s, e){ return s + (Number(e.actualHours)||0); }, 0).toFixed(1) + 'h</span>' +
+              '</div>' +
+              taskExecutions.map(function(ex) {
+                var blockerText = ex.blocker ? '<div class="text-amber-800 bg-amber-50 px-2 py-1 rounded border border-amber-200 font-medium text-[11px] mt-1"><strong>🚨 막힘:</strong> ' + window.sanitize(ex.blocker) + '</div>' : '';
+                return (
+                  '<div class="bg-slate-50 p-2.5 rounded-lg text-[11px] text-slate-600 space-y-1.5 border border-slate-200">' +
+                    '<div class="flex flex-wrap items-center justify-between gap-1">' +
+                      '<div>' +
+                        '<span class="font-bold text-slate-800">' + ex.startTime.replace('T', ' ') + ' ~ ' + ex.endTime.replace('T', ' ') + '</span>' +
+                        '<span class="ml-2 font-bold text-indigo-700">소요: ' + ex.actualHours + 'h</span>' +
+                      '</div>' +
+                      '<div class="flex items-center gap-1.5">' +
+                        '<button onclick="window.editExecution(\'' + ex.id + '\')" class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded transition" title="실행 기록 수정">' +
+                          '<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>' +
+                          '수정' +
+                        '</button>' +
+                        '<button onclick="window.deleteExecution(\'' + ex.id + '\')" class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded transition" title="실행 기록 삭제">' +
+                          '<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+                          '삭제' +
+                        '</button>' +
+                      '</div>' +
+                    '</div>' +
+                    blockerText +
+                  '</div>'
+                );
+              }).join('') +
+            '</div>';
+        }
+
+        var actionBtn = isDone 
+          ? '<button onclick="window.revertTask(\'' + task.id + '\')" class="px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-md transition active:scale-95">진행 중으로 변경</button>'
+          : '<button onclick="window.completeTaskFast(\'' + task.id + '\')" id="completeBtn_' + task.id + '" class="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition active:scale-95">완료 처리</button>';
+
+        return (
+          '<div class="border ' + cardBg + ' rounded-xl p-4 shadow-sm transition space-y-3">' +
+            '<div class="flex flex-wrap items-start justify-between gap-2">' +
+              '<div class="space-y-1">' +
+                '<div class="flex flex-wrap items-center gap-1.5">' +
+                  (!currentPlanId ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">계획: ' + window.sanitize(parentPlanTitle) + '</span>' : '') +
+                  '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ' + priorityBadge + '">' + priorityLabel + '</span>' +
+                  (isDone ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">✓ 완료됨</span>' : '') +
+                  (isDelayed ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">⚠️ 지연</span>' : '') +
+                  (hasBlocker ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">🚨 막힘 기록 있음</span>' : '') +
+                '</div>' +
+                '<h4 class="text-sm font-bold ' + (isDone ? 'line-through text-slate-400' : 'text-slate-900') + '">' + window.sanitize(task.title) + '</h4>' +
+              '</div>' +
+              '<div class="flex items-center gap-1.5">' +
+                actionBtn +
+                '<button onclick="window.openExecutionModal(\'' + task.id + '\')" class="px-2.5 py-1 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition active:scale-95">' +
+                  '+ 실행 기록' +
+                '</button>' +
+                '<button onclick="window.editTask(\'' + task.id + '\')" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md transition active:scale-95" title="할 일 수정">' +
+                  '<svg class="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>' +
+                  '수정' +
+                '</button>' +
+                '<button onclick="window.deleteTask(\'' + task.id + '\')" class="p-1 text-rose-400 hover:text-rose-600 rounded hover:bg-rose-50 transition" title="할 일 삭제">' +
+                  '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+                '</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="flex flex-wrap items-center justify-between text-xs text-slate-600 pt-1 border-t border-slate-100 gap-2">' +
+              '<div class="flex items-center gap-3 font-medium">' +
+                '<span>마감일: <strong class="text-slate-800">' + window.sanitize(task.dueDate) + '</strong></span>' +
+                '<span>예상: <strong class="text-slate-800">' + task.estHours + 'h</strong></span>' +
+              '</div>' +
+              '<div class="flex flex-wrap gap-1">' +
+                task.tags.map(function(tag) { return '<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-medium">#' + window.sanitize(tag) + '</span>'; }).join('') +
+              '</div>' +
+            '</div>' +
+            execLogsHtml +
+          '</div>'
+        );
+      }).join('');
+    };
+
+    window.openTaskModal = function(isEdit) {
+      if ((window.state.plans || []).length === 0) {
+        window.showToast('할 일을 추가하기 전에 먼저 계획을 1개 이상 생성해주세요.');
+        window.openPlanModal(false);
+        return;
+      }
+      document.getElementById('taskModalTitle').textContent = isEdit ? '할 일 수정' : '새 할 일 등록';
+      if (!isEdit) {
+        document.getElementById('taskEditId').value = '';
+        document.getElementById('taskForm').reset();
+        document.getElementById('taskDueDate').value = window.getSeoulTodayString();
+        
+        if (window.state.selectedPlanId) {
+          document.getElementById('taskPlanId').value = window.state.selectedPlanId;
+        } else if (window.state.plans.length > 0) {
+          document.getElementById('taskPlanId').value = window.state.plans[0].id;
+        }
+      }
+      document.getElementById('taskModal').classList.remove('hidden');
+    };
+
+    window.editTask = function(taskId) {
+      var task = (window.state.tasks || []).find(function(t) { return t.id === taskId; });
+      if (!task) return;
+      document.getElementById('taskModalTitle').textContent = '할 일 수정';
+      document.getElementById('taskEditId').value = task.id;
+      document.getElementById('taskPlanId').value = task.planId || '';
+      document.getElementById('taskTitle').value = task.title || '';
+      document.getElementById('taskDueDate').value = task.dueDate || window.getSeoulTodayString();
+      document.getElementById('taskPriority').value = task.priority || 'MEDIUM';
+      document.getElementById('taskTags').value = (task.tags || []).join(', ');
+      document.getElementById('taskEstHours').value = task.estHours || '';
+      document.getElementById('taskModal').classList.remove('hidden');
+    };
+
+    window.handleTaskSubmit = function(event) {
+      event.preventDefault();
+      var editId = document.getElementById('taskEditId').value;
+      var planId = document.getElementById('taskPlanId').value;
+      var title = document.getElementById('taskTitle').value.trim();
+      var dueDate = document.getElementById('taskDueDate').value;
+      var priority = document.getElementById('taskPriority').value;
+      var rawTags = document.getElementById('taskTags').value;
+      var tags = rawTags.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+      var estHours = parseFloat(document.getElementById('taskEstHours').value);
+
+      if (editId) {
+        var task = (window.state.tasks || []).find(function(t) { return t.id === editId; });
+        if (task) {
+          task.planId = planId;
+          task.title = title;
+          task.dueDate = dueDate;
+          task.priority = priority;
+          task.tags = tags;
+          task.estHours = estHours;
+          task.updatedAt = new Date().toISOString();
+          window.showToast('할 일이 수정되었습니다.');
+        }
+      } else {
+        var newId = 'TASK-' + (100 + (window.state.tasks || []).length + 1);
+        if (!window.state.tasks) window.state.tasks = [];
+        window.state.tasks.push({
+          id: newId,
+          planId: planId,
+          title: title,
+          dueDate: dueDate,
+          priority: priority,
+          tags: tags,
+          estHours: estHours,
+          status: 'IN_PROGRESS',
+          isDeleted: false,
+          createdAt: new Date().toISOString()
+        });
+        window.showToast('새 할 일이 등록되었습니다.');
+      }
+
+      if (typeof window.saveData === 'function') window.saveData();
+      window.populateTagFilterOptions();
+      window.renderPlans();
+      window.renderTasks();
+      window.closeModal('taskModal');
+    };
+
+    var completionInFlight = {};
+    window.completeTaskFast = function(taskId) {
+      if (completionInFlight[taskId]) return;
+      completionInFlight[taskId] = true;
+
+      var btn = document.getElementById('completeBtn_' + taskId);
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+      }
+
+      var task = (window.state.tasks || []).find(function(t) { return t.id === taskId; });
+      if (task) {
+        if (task.status === 'COMPLETED') {
+          window.showToast('이미 완료 처리된 할 일입니다.');
+        } else {
+          task.status = 'COMPLETED';
+          task.completedAt = new Date().toISOString();
+          if (typeof window.saveData === 'function') window.saveData();
+          window.renderPlans();
+          window.renderTasks();
+          window.showToast('할 일이 완료되었습니다.');
+        }
+      }
+
+      setTimeout(function() {
+        delete completionInFlight[taskId];
+        if (btn) btn.disabled = false;
+      }, 500);
+    };
+
+    window.revertTask = function(taskId) {
+      var task = (window.state.tasks || []).find(function(t) { return t.id === taskId; });
+      if (task) {
+        task.status = 'IN_PROGRESS';
+        delete task.completedAt;
+        if (typeof window.saveData === 'function') window.saveData();
+        window.renderPlans();
+        window.renderTasks();
+        window.showToast('할 일이 다시 진행 중으로 변경되었습니다.');
+      }
+    };
+
+    window.deleteTask = function(taskId) {
+      var task = (window.state.tasks || []).find(function(t) { return t.id === taskId; });
+      if (!task) return;
+      if (!confirm('정말로 "' + task.title + '" 할 일을 삭제하시겠습니까?')) return;
+      task.isDeleted = true;
+      window.state.executions = (window.state.executions || []).filter(function(ex) { return ex.taskId !== taskId; });
+      if (typeof window.saveData === 'function') window.saveData();
+      window.renderPlans();
+      window.renderTasks();
+      window.showToast('할 일이 삭제되었습니다.');
+    };
+
+    window.openExecutionModal = function(taskId) {
+      var task = (window.state.tasks || []).find(function(t) { return t.id === taskId; });
+      if (!task) return;
+
+      document.getElementById('execEditId').value = '';
+      document.getElementById('execTaskId').value = task.id;
+      document.getElementById('executionModalTitle').textContent = '실제 실행 기록 작성';
+      document.getElementById('executionTaskTitlePreview').textContent = '할 일: ' + task.title;
+      document.getElementById('execBlocker').value = '';
+
+      var now = new Date();
+      var oneHourAgo = new Date(now.getTime() - 1 * 3600000);
+
+      var formatIsoForPicker = function(d) {
+        var pad = function(n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      };
+
+      document.getElementById('execStartTime').value = formatIsoForPicker(oneHourAgo);
+      document.getElementById('execEndTime').value = formatIsoForPicker(now);
+      document.getElementById('execActualHours').value = '1.0';
+      
+      var completeWrapper = document.getElementById('execMarkCompletedWrapper');
+      completeWrapper.classList.remove('hidden');
+      document.getElementById('execMarkCompleted').checked = task.status !== 'COMPLETED';
+
+      document.getElementById('executionModal').classList.remove('hidden');
+    };
+
+    window.editExecution = function(execId) {
+      var ex = (window.state.executions || []).find(function(e) { return e.id === execId; });
+      if (!ex) return;
+      var task = (window.state.tasks || []).find(function(t) { return t.id === ex.taskId; });
+
+      document.getElementById('execEditId').value = ex.id;
+      document.getElementById('execTaskId').value = ex.taskId;
+      document.getElementById('executionModalTitle').textContent = '실행 기록 수정';
+      document.getElementById('executionTaskTitlePreview').textContent = '할 일: ' + (task ? task.title : '');
+      document.getElementById('execStartTime').value = ex.startTime ? ex.startTime.slice(0, 16) : '';
+      document.getElementById('execEndTime').value = ex.endTime ? ex.endTime.slice(0, 16) : '';
+      document.getElementById('execActualHours').value = ex.actualHours || '';
+      document.getElementById('execBlocker').value = ex.blocker || '';
+      
+      document.getElementById('execMarkCompletedWrapper').classList.add('hidden');
+      document.getElementById('executionModal').classList.remove('hidden');
+    };
+
+    window.deleteExecution = function(execId) {
+      if (!confirm('정말로 이 실행 기록을 삭제하시겠습니까?')) return;
+      window.state.executions = (window.state.executions || []).filter(function(e) { return e.id !== execId; });
+      if (typeof window.saveData === 'function') window.saveData();
+      window.renderPlans();
+      window.renderTasks();
+      window.showToast('실행 기록이 삭제되었습니다.');
+    };
+
+    window.calculateAutoDuration = function() {
+      var startStr = document.getElementById('execStartTime').value;
+      var endStr = document.getElementById('execEndTime').value;
+      if (startStr && endStr) {
+        var start = new Date(startStr);
+        var end = new Date(endStr);
+        var diffMs = end - start;
+        if (diffMs > 0) {
+          var hours = (diffMs / (1000 * 60 * 60)).toFixed(1);
+          document.getElementById('execActualHours').value = hours;
+        }
+      }
+    };
+
+    window.handleExecutionSubmit = function(event) {
+      event.preventDefault();
+      var saveBtn = document.getElementById('saveExecutionBtn');
+      if (saveBtn.disabled) return;
+      saveBtn.disabled = true;
+
+      var editId = document.getElementById('execEditId').value;
+      var taskId = document.getElementById('execTaskId').value;
+      var startTime = document.getElementById('execStartTime').value;
+      var endTime = document.getElementById('execEndTime').value;
+      var actualHours = parseFloat(document.getElementById('execActualHours').value);
+      var blocker = document.getElementById('execBlocker').value.trim();
+      var markCompleted = document.getElementById('execMarkCompleted').checked;
+
+      if (editId) {
+        var ex = (window.state.executions || []).find(function(e) { return e.id === editId; });
+        if (ex) {
+          ex.startTime = startTime;
+          ex.endTime = endTime;
+          ex.actualHours = actualHours;
+          ex.blocker = blocker;
+          ex.updatedAt = new Date().toISOString();
+          window.showToast('실행 기록이 수정되었습니다.');
+        }
+      } else {
+        var newExecId = 'EXEC-' + (200 + (window.state.executions || []).length + 1);
+        if (!window.state.executions) window.state.executions = [];
+        window.state.executions.push({
+          id: newExecId,
+          taskId: taskId,
+          startTime: startTime,
+          endTime: endTime,
+          actualHours: actualHours,
+          blocker: blocker,
+          createdAt: new Date().toISOString()
+        });
+
+        if (markCompleted) {
+          var task = (window.state.tasks || []).find(function(t) { return t.id === taskId; });
+          if (task && task.status !== 'COMPLETED') {
+            task.status = 'COMPLETED';
+            task.completedAt = new Date().toISOString();
+          }
+        }
+        window.showToast('실행 기록이 저장되었습니다.');
+      }
+
+      if (typeof window.saveData === 'function') window.saveData();
+      window.renderPlans();
+      window.renderTasks();
+      window.closeModal('executionModal');
+
+      setTimeout(function() {
+        saveBtn.disabled = false;
+      }, 300);
+    };
+
+    window.passToNextPlan = function() {
+      var lesson = document.getElementById('reflectionLessonInput').value.trim();
+      if (!lesson) {
+        window.showToast('고칠 점을 작성해주세요.');
+        return;
+      }
+
+      if (!window.state.reflections) window.state.reflections = [];
+      window.state.reflections.push({
+        id: 'REFL-' + (window.state.reflections.length + 1),
+        lesson: lesson,
+        createdAt: new Date().toISOString()
+      });
+
+      window.openPlanModal(false);
+      document.getElementById('planTitle').value = '[개선] ' + lesson;
+      document.getElementById('planSuccessCriteria').value = '이전 돌아보기 반영: ' + lesson;
+      window.showToast('고칠 점이 새 계획 양식으로 전달되었습니다.');
+    };
+
+    window.exportDataToFile = function() {
+      var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.state, null, 2));
+      var downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", 'plan-do-see-diary-' + window.getSeoulTodayString() + '.json');
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      window.showToast('다이어리 데이터가 파일(.json)로 내보내졌습니다.');
+    };
+
+    window.importDataFromFile = function(event) {
+      var file = event.target.files[0];
+      if (!file) return;
+
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var parsed = JSON.parse(e.target.result);
+          if (parsed && Array.isArray(parsed.plans) && Array.isArray(parsed.tasks)) {
+            window.state = parsed;
+            if (typeof window.saveData === 'function') window.saveData();
+            window.populatePlanSelectOptions();
+            window.populateTagFilterOptions();
+            window.renderAll();
+            window.showToast('파일 데이터를 성공적으로 클라우드에 불러왔습니다.');
+          } else {
+            window.showToast('올바른 백업 JSON 형식이 아닙니다.');
+          }
+        } catch (err) {
+          console.error(err);
+          window.showToast('JSON 파일을 읽는 데 실패했습니다.');
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    window.populatePlanSelectOptions = function() {
+      var select = document.getElementById('taskPlanId');
+      if (!select) return;
+      select.innerHTML = (window.state.plans || []).map(function(p) { 
+        return '<option value="' + p.id + '">' + window.sanitize(p.title) + '</option>'; 
+      }).join('');
+    };
+
+    window.populateTagFilterOptions = function() {
+      var select = document.getElementById('taskTagFilter');
+      if (!select) return;
+      var allTags = new Set();
+      (window.state.tasks || []).forEach(function(t) {
+        (t.tags || []).forEach(function(tag) { allTags.add(tag); });
+      });
+
+      var currentVal = select.value;
+      var html = '<option value="ALL">전체 태그</option>';
+      allTags.forEach(function(tag) {
+        html += '<option value="' + window.sanitize(tag) + '">#' + window.sanitize(tag) + '</option>';
+      });
+      select.innerHTML = html;
+      select.value = currentVal || 'ALL';
+    };
+
+    window.renderAll = function() {
+      window.populatePlanSelectOptions();
+      window.populateTagFilterOptions();
+      window.renderSummary();
+      window.renderPlans();
+      window.renderTasks();
+    };
+
+    window.closeModal = function(modalId) {
+      var modal = document.getElementById(modalId);
+      if (modal) modal.classList.add('hidden');
+    };
+  </script>
+</body>
+</html>
