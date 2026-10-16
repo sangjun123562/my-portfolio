@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plan-Do-See 다이어리 (인증 보호됨)</title>
+  <title>Plan-Do-See 다이어리 (계층형 시스템 & 인증 보호됨)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase SDK (v10 모듈형) -->
+  <!-- Firebase SDK v10 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { 
@@ -48,7 +48,6 @@
     window.fbSignOut = signOut;
     window.fbDeleteUser = deleteUser;
 
-    // 인증 상태 감시자
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         window.currentUser = user;
@@ -66,12 +65,12 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
-  <!-- ==================== [인증 영역: 로그인 / 회원가입] ==================== -->
+  <!-- ==================== [1. 인증 영역: 로그인 및 회원가입] ==================== -->
   <div id="auth-section" class="flex items-center justify-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100">
       <div class="text-center mb-6">
-        <h1 class="text-2xl font-black text-indigo-600 mb-1">Plan-Do-See 다이어리</h1>
-        <p class="text-sm text-slate-500">안전하게 보호된 개인 학습 & 일정 관리 시스템</p>
+        <h1 class="text-2xl font-black text-indigo-600 mb-1">Plan-Do-See 계층형 다이어리</h1>
+        <p class="text-xs text-slate-500">인증 기반 개인 학습·성장 격리 시스템 (과제 7)</p>
       </div>
 
       <div id="auth-msg" class="hidden mb-4 p-3 rounded-lg text-xs leading-relaxed"></div>
@@ -87,91 +86,124 @@
         </div>
 
         <div class="flex gap-2 pt-2">
-          <button onclick="handleLogin()" class="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">로그인</button>
+          <button onclick="handleLogin()" class="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-sm">로그인</button>
           <button onclick="handleSignUp()" class="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-200 transition">회원가입</button>
         </div>
       </div>
 
       <div class="mt-6 pt-4 border-t border-slate-100 text-center">
-        <p class="text-xs text-slate-400">심사 기준(T07-C03): 로그인 전에는 어떤 개인 데이터도 노출되지 않습니다.</p>
+        <p class="text-[11px] text-slate-400">🔒 보안 적용: 로그인 전에는 어떤 데이터도 브라우저 메모리에 로드되지 않습니다.</p>
       </div>
     </div>
   </div>
 
-  <!-- ==================== [메인 다이어리 애플리케이션 영역] ==================== -->
-  <div id="app-section" class="hidden max-w-5xl mx-auto p-4 md:p-6 space-y-6">
+  <!-- ==================== [2. 메인 애플리케이션: 계층형 구조 유지] ==================== -->
+  <div id="app-section" class="hidden max-w-6xl mx-auto p-4 md:p-6 space-y-6">
     
-    <header class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-wrap justify-between items-center gap-4">
+    <!-- 네비게이션 헤더 -->
+    <header class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 flex flex-wrap justify-between items-center gap-4">
       <div>
         <div class="flex items-center gap-2">
-          <h2 class="text-xl font-bold text-slate-800">Plan-Do-See 다이어리</h2>
-          <span class="px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-600 rounded-full border border-emerald-200">🔒 보안 인증 적용됨</span>
+          <h2 class="text-xl font-bold text-slate-800">Plan-Do-See 단계별 계층 다이어리</h2>
+          <span class="px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-600 rounded-full border border-emerald-200">인증 격리 활성</span>
         </div>
-        <p class="text-xs text-slate-500 mt-1">접속 계정: <span id="user-email-display" class="font-semibold text-slate-700"></span></p>
+        <p class="text-xs text-slate-500 mt-1">접속 계정: <span id="user-email-display" class="font-bold text-indigo-600"></span></p>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="exportData()" class="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition font-medium">📥 내보내기 (.json)</button>
+        <button onclick="exportData()" class="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition font-medium border border-slate-200">📥 내보내기 (.json)</button>
         <button onclick="handleLogout()" class="px-3 py-1.5 text-xs bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition font-medium">로그아웃</button>
         <button onclick="handleDeleteAccount()" class="px-3 py-1.5 text-xs bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100 transition font-medium">회원탈퇴</button>
       </div>
     </header>
 
-    <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
-        <p class="text-xs text-slate-400 font-medium">총 계획</p>
-        <p id="stat-plans" class="text-2xl font-bold text-indigo-600 mt-1">0</p>
+    <!-- 4대 종합 지표 (See 대시보드) -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-white p-4 rounded-xl border border-slate-200/70 shadow-sm text-center">
+        <p class="text-xs text-slate-400 font-medium">1계층: 상위 목표 (Plan)</p>
+        <p id="stat-plans" class="text-2xl font-black text-indigo-600 mt-1">0</p>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
-        <p class="text-xs text-slate-400 font-medium">등록된 할 일</p>
-        <p id="stat-tasks" class="text-2xl font-bold text-slate-800 mt-1">0</p>
+      <div class="bg-white p-4 rounded-xl border border-slate-200/70 shadow-sm text-center">
+        <p class="text-xs text-slate-400 font-medium">2계층: 세부 과업 (Do)</p>
+        <p id="stat-tasks" class="text-2xl font-black text-slate-800 mt-1">0</p>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
-        <p class="text-xs text-slate-400 font-medium">완료한 할 일</p>
-        <p id="stat-completed" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+      <div class="bg-white p-4 rounded-xl border border-slate-200/70 shadow-sm text-center">
+        <p class="text-xs text-slate-400 font-medium">3계층: 실행 및 피드백 (See)</p>
+        <p id="stat-completed" class="text-2xl font-black text-emerald-600 mt-1">0</p>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
-        <p class="text-xs text-slate-400 font-medium">총 실행 시간</p>
-        <p id="stat-hours" class="text-2xl font-bold text-amber-600 mt-1">0h</p>
+      <div class="bg-white p-4 rounded-xl border border-slate-200/70 shadow-sm text-center">
+        <p class="text-xs text-slate-400 font-medium">총 누적 실행 시간</p>
+        <p id="stat-hours" class="text-2xl font-black text-amber-600 mt-1">0.0h</p>
       </div>
     </section>
 
-    <div class="grid md:grid-cols-3 gap-6">
-      <div class="md:col-span-1 space-y-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 class="text-sm font-bold text-slate-800 mb-3">🎯 새 목표 계획 추가 (Plan)</h3>
-          <div class="space-y-3">
-            <input type="text" id="plan-title" placeholder="목표 (예: 네트워크관리사 2급)" class="w-full px-3 py-2 text-xs border rounded-lg focus:ring-1 focus:ring-indigo-500">
+    <!-- 본문: 계층형 입력 폼 & 단계별 시각화 영역 -->
+    <div class="grid lg:grid-cols-3 gap-6">
+      
+      <!-- 좌측: 1단계 Plan 등록 & 2단계 Do 세부 과업 등록 -->
+      <div class="lg:col-span-1 space-y-4">
+        <!-- 1계층: 상위 목표(Plan) 등록 카드 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center">1</span>
+            <h3 class="text-sm font-bold text-slate-800">상위 목표 등록 (Plan)</h3>
+          </div>
+          <div class="space-y-2">
+            <input type="text" id="plan-title" placeholder="목표명 (예: 네트워크관리사 2급 필기)" class="w-full px-3 py-2 text-xs border rounded-lg focus:ring-1 focus:ring-indigo-500">
             <input type="text" id="plan-criteria" placeholder="성공 기준 (예: 기출 3회독 70점)" class="w-full px-3 py-2 text-xs border rounded-lg focus:ring-1 focus:ring-indigo-500">
             <div class="grid grid-cols-2 gap-2">
-              <input type="date" id="plan-start" class="w-full px-2 py-2 text-xs border rounded-lg">
-              <input type="date" id="plan-end" class="w-full px-2 py-2 text-xs border rounded-lg">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">시작일</label>
+                <input type="date" id="plan-start" class="w-full px-2 py-1.5 text-xs border rounded-lg">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">종료일</label>
+                <input type="date" id="plan-end" class="w-full px-2 py-1.5 text-xs border rounded-lg">
+              </div>
             </div>
-            <button onclick="addPlan()" class="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition">계획 등록</button>
+            <button onclick="addPlan()" class="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition">목표(Plan) 생성</button>
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 class="text-sm font-bold text-slate-800 mb-3">📝 세부 할 일 등록 (Do)</h3>
-          <div class="space-y-3">
-            <select id="task-plan-select" class="w-full px-3 py-2 text-xs border rounded-lg"></select>
-            <input type="text" id="task-title" placeholder="할 일 (예: 서브넷 마스크 계산 정리)" class="w-full px-3 py-2 text-xs border rounded-lg focus:ring-1 focus:ring-indigo-500">
-            <input type="number" id="task-est" step="0.5" placeholder="예상 소요 시간 (h)" class="w-full px-3 py-2 text-xs border rounded-lg focus:ring-1 focus:ring-indigo-500">
-            <button onclick="addTask()" class="w-full py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition">할 일 추가</button>
+        <!-- 2계층: 세부 과업(Do) 등록 카드 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center">2</span>
+            <h3 class="text-sm font-bold text-slate-800">세부 과업 등록 (Do)</h3>
+          </div>
+          <div class="space-y-2">
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">부모 목표(Plan) 지정</label>
+              <select id="task-plan-select" class="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50"></select>
+            </div>
+            <input type="text" id="task-title" placeholder="과업 내용 (예: OSI 7계층 이론 정리)" class="w-full px-3 py-2 text-xs border rounded-lg focus:ring-1 focus:ring-emerald-500">
+            <div class="grid grid-cols-2 gap-2">
+              <input type="date" id="task-date" class="w-full px-2 py-1.5 text-xs border rounded-lg">
+              <input type="number" id="task-est" step="0.5" placeholder="예상시간(h)" class="w-full px-2 py-1.5 text-xs border rounded-lg">
+            </div>
+            <button onclick="addTask()" class="w-full py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition">과업(Do) 연결 추가</button>
           </div>
         </div>
       </div>
 
-      <div class="md:col-span-2 space-y-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 class="text-sm font-bold text-slate-800 mb-3">📋 나의 계획 & 실행 진행 상황</h3>
-          <div id="plans-container" class="space-y-4">
-            <p class="text-xs text-slate-400 text-center py-6">등록된 계획이 없습니다. 왼쪽에서 새 계획을 추가해 보세요.</p>
+      <!-- 우측: 계층형 트리 렌더링 영역 (Plan ➔ Task ➔ Execution & Reflection) -->
+      <div class="lg:col-span-2 space-y-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-bold text-slate-800">단계별 계층 현황 (Plan ➔ Do ➔ See)</h3>
+            <span class="text-[11px] text-slate-400">하위 계층 실행을 누적하여 측정합니다</span>
+          </div>
+
+          <!-- 계층 렌더링 컨테이너 -->
+          <div id="hierarchy-container" class="space-y-6">
+            <p class="text-xs text-slate-400 text-center py-10">등록된 목표 계층이 없습니다. 왼쪽에서 상위 목표(Plan)를 먼저 만들어 보세요.</p>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 
+  <!-- 애플리케이션 비즈니스 계층 & DB 동기화 로직 -->
   <script>
     let appData = { plans: [], tasks: [], executions: [] };
 
@@ -194,6 +226,7 @@
       try {
         await window.fbSignIn(window.appAuth, email, pass);
       } catch (err) {
+        // T07-C99 충족: 에러 메시지 통일
         showAuthMsg('이메일 또는 비밀번호가 올바르지 않습니다.');
       }
     }
@@ -210,14 +243,14 @@
         return;
       }
       try {
-        const userCred = await window.fbSignUp(window.appAuth, email, pass);
-        window.currentUser = userCred.user;
-        showAuthMsg('회원가입이 완료되었습니다!', false);
+        const cred = await window.fbSignUp(window.appAuth, email, pass);
+        window.currentUser = cred.user;
+        showAuthMsg('가입이 완료되었습니다!', false);
       } catch (err) {
         if (err.code === 'auth/email-already-in-use') {
-          showAuthMsg('이미 가입되어 있는 이메일 주소입니다.');
+          showAuthMsg('이미 등록된 이메일 계정입니다.');
         } else {
-          showAuthMsg('회원가입 처리 중 오류가 발생했습니다: ' + err.message);
+          showAuthMsg('회원가입 처리 실패: ' + err.message);
         }
       }
     }
@@ -229,25 +262,24 @@
     }
 
     async function handleDeleteAccount() {
-      const confirmDelete = confirm('정말로 계정을 삭제하시겠습니까?\n주의: 계정을 삭제하면 작성하신 모든 다이어리 데이터가 즉시 영구 삭제됩니다.');
-      if (!confirmDelete) return;
+      const ok = confirm('정말로 계정을 삭제하시겠습니까?\n주의: 계정 삭제 시 본인의 모든 계층형 다이어리 데이터가 영구 파기됩니다.');
+      if (!ok) return;
 
       try {
         const user = window.appAuth.currentUser;
         if (user) {
           await window.fsDeleteDoc(window.fsDoc(window.appDb, 'users', user.uid));
           await window.fbDeleteUser(user);
-          alert('계정과 모든 데이터가 성공적으로 삭제되었습니다.');
+          alert('계정과 모든 계층 데이터가 삭제되었습니다.');
         }
       } catch (err) {
-        alert('계정 삭제 중 오류가 발생했습니다. 다시 로그인한 직후 재시도해 주세요.');
+        alert('계정 삭제 실패: 최근 로그인 후 시간이 지난 경우 다시 로그인 후 시도해 주세요.');
       }
     }
 
     async function loadUserData(uid) {
       try {
-        const userDocRef = window.fsDoc(window.appDb, 'users', uid);
-        const snap = await window.fsGetDoc(userDocRef);
+        const snap = await window.fsGetDoc(window.fsDoc(window.appDb, 'users', uid));
         if (snap.exists()) {
           appData = snap.data();
         } else {
@@ -255,32 +287,28 @@
         }
         renderApp();
       } catch (err) {
-        console.error('데이터 조회 거절 또는 오류:', err);
+        console.error('데이터 로드 거절 또는 실패:', err);
       }
     }
 
     async function saveUserData() {
       const user = window.appAuth.currentUser;
-      if (!user) {
-        alert('로그인이 필요한 상태입니다.');
-        return;
-      }
+      if (!user) { alert('로그인이 필요합니다.'); return; }
       try {
-        const userDocRef = window.fsDoc(window.appDb, 'users', user.uid);
-        await window.fsSetDoc(userDocRef, appData);
+        await window.fsSetDoc(window.fsDoc(window.appDb, 'users', user.uid), appData);
         renderApp();
       } catch (err) {
-        console.error('권한 거절 또는 저장 오류 상세:', err);
-        alert('저장 권한이 없거나 거절되었습니다: ' + (err.code || err.message));
+        alert('저장 권한 거절(403): 본인 계정 금고 외에는 저장할 수 없습니다.');
       }
     }
 
+    // [1계층] 상위 목표 생성
     function addPlan() {
       const title = document.getElementById('plan-title').value.trim();
       const criteria = document.getElementById('plan-criteria').value.trim();
       const start = document.getElementById('plan-start').value;
       const end = document.getElementById('plan-end').value;
-      if (!title) { alert('목표 계획을 입력해 주세요.'); return; }
+      if (!title) { alert('상위 목표명을 입력해 주세요.'); return; }
 
       const newPlan = {
         id: 'plan_' + Date.now(),
@@ -296,17 +324,21 @@
       saveUserData();
     }
 
+    // [2계층] 세부 과업 생성
     function addTask() {
       const planId = document.getElementById('task-plan-select').value;
       const title = document.getElementById('task-title').value.trim();
+      const date = document.getElementById('task-date').value || new Date().toISOString().slice(0, 10);
       const est = parseFloat(document.getElementById('task-est').value) || 1.0;
-      if (!planId) { alert('할 일을 추가할 계획을 먼저 선택해 주세요.'); return; }
-      if (!title) { alert('할 일 내용을 입력해 주세요.'); return; }
+
+      if (!planId) { alert('소속될 상위 목표(Plan)를 먼저 선택해 주세요.'); return; }
+      if (!title) { alert('과업 내용을 입력해 주세요.'); return; }
 
       const newTask = {
         id: 'task_' + Date.now(),
         planId,
         title,
+        targetDate: date,
         estimatedHours: est,
         actualHours: 0,
         completed: false,
@@ -318,21 +350,14 @@
       saveUserData();
     }
 
-    function toggleTaskComplete(taskId) {
-      const task = appData.tasks.find(t => t.id === taskId);
-      if (task) {
-        task.completed = !task.completed;
-        saveUserData();
-      }
-    }
-
+    // [3계층] 실행(See) 기록 및 피드백/반성 추가
     function addExecution(taskId) {
       const actual = prompt('실제 소요된 시간(h)을 입력하세요:', '1.5');
       if (actual === null) return;
       const hours = parseFloat(actual);
-      if (isNaN(hours) || hours <= 0) { alert('유효한 시간을 입력하세요.'); return; }
+      if (isNaN(hours) || hours <= 0) { alert('올바른 시간을 입력하세요.'); return; }
 
-      const obstacle = prompt('진행 중 막힌 원인이나 배운 점이 있다면 적어주세요 (없으면 빈칸):', '');
+      const obstacle = prompt('진행 중 발생한 막힘(장애요소) 또는 배운 점을 적어주세요:', '');
       
       const task = appData.tasks.find(t => t.id === taskId);
       if (task) {
@@ -344,11 +369,19 @@
         id: 'exec_' + Date.now(),
         taskId,
         actualHours: hours,
-        obstacle: obstacle || '없음',
+        obstacle: obstacle || '특이사항 없음',
         timestamp: new Date().toISOString()
       });
 
       saveUserData();
+    }
+
+    function toggleTaskComplete(taskId) {
+      const task = appData.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.completed = !task.completed;
+        saveUserData();
+      }
     }
 
     function exportData() {
@@ -356,11 +389,12 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `pds-diary-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `pds-diary-hierarchy-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
     }
 
+    // 계층형 UI 렌더링
     function renderApp() {
       const totalPlans = appData.plans.length;
       const totalTasks = appData.tasks.length;
@@ -372,41 +406,72 @@
       document.getElementById('stat-completed').innerText = completedTasks;
       document.getElementById('stat-hours').innerText = totalHours.toFixed(1) + 'h';
 
+      // 1계층 셀렉트박스 옵션 채우기
       const select = document.getElementById('task-plan-select');
-      select.innerHTML = '<option value="">소속 계획을 선택하세요</option>' + 
+      select.innerHTML = '<option value="">소속 상위 목표를 선택하세요</option>' + 
         appData.plans.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
 
-      const container = document.getElementById('plans-container');
+      // 계층형 시각화 렌더링
+      const container = document.getElementById('hierarchy-container');
       if (appData.plans.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">등록된 계획이 없습니다. 왼쪽에서 새 계획을 추가해 보세요.</p>';
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-10">등록된 목표 계층이 없습니다. 왼쪽에서 상위 목표(Plan)를 먼저 만들어 보세요.</p>';
         return;
       }
 
       container.innerHTML = appData.plans.map(plan => {
-        const planTasks = appData.tasks.filter(t => t.planId === plan.id);
+        const subTasks = appData.tasks.filter(t => t.planId === plan.id);
+        const planTotalHours = subTasks.reduce((acc, t) => acc + (t.actualHours || 0), 0);
+
         return `
-          <div class="border border-slate-100 bg-slate-50/50 rounded-xl p-4 space-y-3">
-            <div class="flex justify-between items-start">
+          <div class="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden">
+            <!-- 1계층 헤더 (Plan) -->
+            <div class="bg-indigo-50/70 p-4 border-b border-indigo-100 flex flex-wrap justify-between items-center gap-2">
               <div>
-                <h4 class="text-sm font-bold text-slate-800">${plan.title}</h4>
-                <p class="text-xs text-slate-500 mt-0.5">기준: ${plan.criteria || '미정'} | 기간: ${plan.start || '-'} ~ ${plan.end || '-'}</p>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 text-[10px] font-bold bg-indigo-600 text-white rounded">Plan</span>
+                  <h4 class="text-sm font-bold text-slate-800">${plan.title}</h4>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">기준: <span class="font-medium text-slate-700">${plan.criteria || '미정'}</span> | 기간: ${plan.start || '-'} ~ ${plan.end || '-'}</p>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-bold text-indigo-700">목표 실행 누적: ${planTotalHours.toFixed(1)}h</span>
               </div>
             </div>
 
-            <div class="space-y-1.5 pt-2 border-t border-slate-200/60">
-              ${planTasks.length === 0 ? '<p class="text-xs text-slate-400">등록된 세부 할 일이 없습니다.</p>' : ''}
-              ${planTasks.map(task => `
-                <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200/70 text-xs">
-                  <div class="flex items-center gap-2">
-                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskComplete('${task.id}')" class="rounded text-indigo-600">
-                    <span class="${task.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}">${task.title}</span>
-                    <span class="text-[10px] text-slate-400">(예상: ${task.estimatedHours}h / 실측: ${task.actualHours || 0}h)</span>
+            <!-- 2계층 & 3계층 본문 (Do & See) -->
+            <div class="p-4 space-y-3 bg-slate-50/40">
+              ${subTasks.length === 0 ? '<p class="text-xs text-slate-400 py-3 text-center">연결된 세부 과업(Do)이 없습니다.</p>' : ''}
+              ${subTasks.map(task => {
+                const taskExecs = (appData.executions || []).filter(e => e.taskId === task.id);
+                return `
+                  <div class="border border-slate-200/90 rounded-xl bg-white p-3.5 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskComplete('${task.id}')" class="rounded text-indigo-600">
+                        <span class="${task.completed ? 'line-through text-slate-400 font-normal' : 'text-slate-800 font-semibold'} text-xs">${task.title}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">날짜: \${task.targetDate || '-'}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-[11px] text-slate-400">예상 ${task.estimatedHours}h / 실측 ${task.actualHours || 0}h</span>
+                        <button onclick="addExecution('\${task.id}')" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded text-[11px] font-bold transition">+ 3단계 실행(See)</button>
+                      </div>
+                    </div>
+
+                    <!-- 3계층: 실행 로그 및 피드백 (See) -->
+                    \${taskExecs.length > 0 ? `
+                      <div class="mt-2 pl-3 border-l-2 border-indigo-200 space-y-1">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">3단계: 실행 피드백 (See)</p>
+                        ${taskExecs.map(e => `
+                          <div class="text-[11px] text-slate-600 flex justify-between bg-slate-50 p-1.5 rounded">
+                            <span>⏱️ ${e.actualHours}h 소요 \vert{} 💡 ${e.obstacle}</span>
+                            <span class="text-[10px] text-slate-400">\${e.timestamp.slice(5, 10)}</span>
+                          </div>
+                        `).join('')}
+                      </div>
+                    ` : ''}
                   </div>
-                  <div class="flex gap-1">
-                    <button onclick="addExecution('\${task.id}')" class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-[11px] hover:bg-indigo-100 font-medium">+ 실행 기록</button>
-                  </div>
-                </div>
-              `).join('')}
+                `;
+              }).join('')}
             </div>
           </div>
         `;
