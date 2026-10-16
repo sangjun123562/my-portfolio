@@ -24,7 +24,6 @@
       deleteDoc 
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyAjyu3AF4JJATmP1k2O0pSv6dj-XcUNB-E",
       authDomain: "pds-diary-a9b33.firebaseapp.com",
@@ -38,7 +37,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 글로벌 객체로 노출하여 DOM 이벤트에서 접근 가능하게 설정
     window.appAuth = auth;
     window.appDb = db;
     window.fsDoc = doc;
@@ -50,18 +48,18 @@
     window.fbSignOut = signOut;
     window.fbDeleteUser = deleteUser;
 
-    // 인증 상태 감시자 등록
+    // 인증 상태 감시자
     onAuthStateChanged(auth, async (user) => {
       if (user) {
+        window.currentUser = user;
         document.getElementById('auth-section').classList.add('hidden');
         document.getElementById('app-section').classList.remove('hidden');
         document.getElementById('user-email-display').innerText = user.email;
-        window.currentUser = user;
         await loadUserData(user.uid);
       } else {
+        window.currentUser = null;
         document.getElementById('auth-section').classList.remove('hidden');
         document.getElementById('app-section').classList.add('hidden');
-        window.currentUser = null;
       }
     });
   </script>
@@ -76,7 +74,6 @@
         <p class="text-sm text-slate-500">안전하게 보호된 개인 학습 & 일정 관리 시스템</p>
       </div>
 
-      <!-- 알림 메시지 상자 (오류 및 안내) -->
       <div id="auth-msg" class="hidden mb-4 p-3 rounded-lg text-xs leading-relaxed"></div>
 
       <div class="space-y-4">
@@ -104,7 +101,6 @@
   <!-- ==================== [메인 다이어리 애플리케이션 영역] ==================== -->
   <div id="app-section" class="hidden max-w-5xl mx-auto p-4 md:p-6 space-y-6">
     
-    <!-- 최상단 헤더 네비게이션 -->
     <header class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-wrap justify-between items-center gap-4">
       <div>
         <div class="flex items-center gap-2">
@@ -120,7 +116,6 @@
       </div>
     </header>
 
-    <!-- 1일차~5일차 지표 대시보드 (See) -->
     <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
         <p class="text-xs text-slate-400 font-medium">총 계획</p>
@@ -140,12 +135,8 @@
       </div>
     </section>
 
-    <!-- 계획 등록 및 목록 (Plan) -->
     <div class="grid md:grid-cols-3 gap-6">
-      
-      <!-- 좌측: 입력 폼 -->
       <div class="md:col-span-1 space-y-4">
-        <!-- 계획 추가 카드 -->
         <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 class="text-sm font-bold text-slate-800 mb-3">🎯 새 목표 계획 추가 (Plan)</h3>
           <div class="space-y-3">
@@ -159,7 +150,6 @@
           </div>
         </div>
 
-        <!-- 세부 할 일 추가 카드 -->
         <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 class="text-sm font-bold text-slate-800 mb-3">📝 세부 할 일 등록 (Do)</h3>
           <div class="space-y-3">
@@ -171,7 +161,6 @@
         </div>
       </div>
 
-      <!-- 우측: 계획 및 할 일 목록 -->
       <div class="md:col-span-2 space-y-4">
         <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 class="text-sm font-bold text-slate-800 mb-3">📋 나의 계획 & 실행 진행 상황</h3>
@@ -180,11 +169,9 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- 애플리케이션 프론트엔드 비즈니스 로직 -->
   <script>
     let appData = { plans: [], tasks: [], executions: [] };
 
@@ -197,7 +184,6 @@
       box.classList.remove('hidden');
     }
 
-    // T07-C98, T07-C99 충족: 로그인 처리 및 오류 문구 통일
     async function handleLogin() {
       const email = document.getElementById('auth-email').value.trim();
       const pass = document.getElementById('auth-password').value.trim();
@@ -208,12 +194,10 @@
       try {
         await window.fbSignIn(window.appAuth, email, pass);
       } catch (err) {
-        // 보안 요구사항: 아이디 없음과 비번 불일치 시 동일한 메시지 출력
         showAuthMsg('이메일 또는 비밀번호가 올바르지 않습니다.');
       }
     }
 
-    // T07-C94, T07-C98 충족: 회원가입 처리
     async function handleSignUp() {
       const email = document.getElementById('auth-email').value.trim();
       const pass = document.getElementById('auth-password').value.trim();
@@ -226,44 +210,40 @@
         return;
       }
       try {
-        await window.fbSignUp(window.appAuth, email, pass);
+        const userCred = await window.fbSignUp(window.appAuth, email, pass);
+        window.currentUser = userCred.user;
         showAuthMsg('회원가입이 완료되었습니다!', false);
       } catch (err) {
         if (err.code === 'auth/email-already-in-use') {
           showAuthMsg('이미 가입되어 있는 이메일 주소입니다.');
         } else {
-          showAuthMsg('회원가입 처리 중 오류가 발생했습니다.');
+          showAuthMsg('회원가입 처리 중 오류가 발생했습니다: ' + err.message);
         }
       }
     }
 
-    // T07-C96 충족: 로그아웃
     async function handleLogout() {
       if (confirm('로그아웃 하시겠습니까?')) {
         await window.fbSignOut(window.appAuth);
       }
     }
 
-    // T07-C134 충족: 회원탈퇴 시 데이터 삭제 및 안내
     async function handleDeleteAccount() {
       const confirmDelete = confirm('정말로 계정을 삭제하시겠습니까?\n주의: 계정을 삭제하면 작성하신 모든 다이어리 데이터가 즉시 영구 삭제됩니다.');
       if (!confirmDelete) return;
 
       try {
-        const user = window.currentUser;
+        const user = window.appAuth.currentUser;
         if (user) {
-          // 1. 유저 전용 DB 문서 삭제
           await window.fsDeleteDoc(window.fsDoc(window.appDb, 'users', user.uid));
-          // 2. 인증 계정 탈퇴
           await window.fbDeleteUser(user);
           alert('계정과 모든 데이터가 성공적으로 삭제되었습니다.');
         }
       } catch (err) {
-        alert('계정 삭제 중 오류가 발생했습니다. 보안을 위해 다시 로그인한 직후 재시도해 주세요.');
+        alert('계정 삭제 중 오류가 발생했습니다. 다시 로그인한 직후 재시도해 주세요.');
       }
     }
 
-    // 데이터 로드 (내 UID 문서만 조회)
     async function loadUserData(uid) {
       try {
         const userDocRef = window.fsDoc(window.appDb, 'users', uid);
@@ -279,16 +259,19 @@
       }
     }
 
-    // 데이터 저장 (내 UID 문서에만 저장)
     async function saveUserData() {
-      if (!window.currentUser) return;
+      const user = window.appAuth.currentUser;
+      if (!user) {
+        alert('로그인이 필요한 상태입니다.');
+        return;
+      }
       try {
-        const userDocRef = window.fsDoc(window.appDb, 'users', window.currentUser.uid);
+        const userDocRef = window.fsDoc(window.appDb, 'users', user.uid);
         await window.fsSetDoc(userDocRef, appData);
         renderApp();
       } catch (err) {
-        console.error('권한 거절 또는 저장 오류:', err);
-        alert('저장 권한이 없거나 거절되었습니다.');
+        console.error('권한 거절 또는 저장 오류 상세:', err);
+        alert('저장 권한이 없거나 거절되었습니다: ' + (err.code || err.message));
       }
     }
 
@@ -368,7 +351,6 @@
       saveUserData();
     }
 
-    // T07-C133 충족: 내보내기 기능
     function exportData() {
       const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -380,7 +362,6 @@
     }
 
     function renderApp() {
-      // 대시보드 지표 집계
       const totalPlans = appData.plans.length;
       const totalTasks = appData.tasks.length;
       const completedTasks = appData.tasks.filter(t => t.completed).length;
@@ -391,12 +372,10 @@
       document.getElementById('stat-completed').innerText = completedTasks;
       document.getElementById('stat-hours').innerText = totalHours.toFixed(1) + 'h';
 
-      // 계획 선택 셀렉트 박스 갱신
       const select = document.getElementById('task-plan-select');
       select.innerHTML = '<option value="">소속 계획을 선택하세요</option>' + 
         appData.plans.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
 
-      // 목록 렌더링
       const container = document.getElementById('plans-container');
       if (appData.plans.length === 0) {
         container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">등록된 계획이 없습니다. 왼쪽에서 새 계획을 추가해 보세요.</p>';
@@ -414,7 +393,6 @@
               </div>
             </div>
 
-            <!-- 소속 할 일 목록 -->
             <div class="space-y-1.5 pt-2 border-t border-slate-200/60">
               ${planTasks.length === 0 ? '<p class="text-xs text-slate-400">등록된 세부 할 일이 없습니다.</p>' : ''}
               ${planTasks.map(task => `
