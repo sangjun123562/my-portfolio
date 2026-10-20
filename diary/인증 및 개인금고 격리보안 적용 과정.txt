@@ -1,0 +1,117 @@
+================================================================================
+  플랜두씨 다이어리 인증(Firebase Auth) 및 개인 금고 격리 구현 가이드
+================================================================================
+
+1. 개요 및 목적
+--------------------------------------------------------------------------------
+기존의 플랜두씨 다이어리는 누구나 접근 가능한 공용 클라우드 문서(pds_diary_data/main_workspace)를
+공유하여 사용하는 구조였습니다.
+과제 7의 요구사항에 따라 다음 3가지 핵심 목표를 달성하도록 재설계되었습니다:
+  1) 사용자 인증(이메일/비밀번호)을 통한 개인 신원 식별
+  2) 개인별 격리 금고(/users/{userId}) 구축을 통한 타인 데이터 접근 원천 차단
+  3) 클라우드 데이터베이스 서버 레벨의 보안 규칙(Security Rules) 적용을 통한 403 거절 보장
+
+
+2. 전체 시스템 아키텍처 및 데이터 흐름
+--------------------------------------------------------------------------------
+[비로그인 사용자]
+   ↓ 
+전체 화면 차단 오버레이(authOverlay) 노출
+(브라우저 메모리에 일체의 다이어리 데이터 로드 차단)
+   ↓ 
+[로그인 성공 (Firebase Auth)]
+   ↓ JWT 토큰 발급 및 UID 확인 (예: 5aOdta9HyGXfZsr9nYRkO9y6n602)
+오버레이 해제 (style.display = 'none', pointer-events-none 적용)
+   ↓ 
+[개인 금고 연동 (Cloud Firestore)]
+   경로: /users/{userId}
+   - 본인 UID 일치 시: 실시간 동기화(onSnapshot) 및 저장(setDoc) 허용 (200 OK)
+   - 타인 UID 접근 시: Security Rules에 의해 즉시 차단 (403 Permission Denied)
+
+
+3. 세부 구현 단계
+--------------------------------------------------------------------------------
+
+[단계 1] Firebase Authentication SDK 연동 및 상태 감시
+- Firebase v10 모듈 SDK에서 getAuth, signInWithEmailAndPassword,
+  createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser 임포트.
+- onAuthStateChanged 리스너를 통해 브라우저 세션의 로그인/로그아웃 상태를 실시간 감지:
+  * user가 존재할 때: 
+    - authOverlay를 display: none 및 pointer-events-none으로 숨김 (버튼 클릭 방해 원천 차단)
+    - currentUserDisplay에 사용자 이메일 표시
+    - doc(db, 'users', user.uid)에 실시간 구독(onSnapshot) 연결
+  * user가 없을 때:
+    - authOverlay를 display: flex로 전체 화면 노출
+    - 기존 메모리 상태(window.state) 완전 초기화
+    - 기존 실시간 구독(unsubscribe) 즉시 해제
+
+[단계 2] 로그인 오류 메시지 단일화 (T07-C99 보안 표준 충족)
+- 계정 탈취 및 이메일 전수 조사 공격을 방지하기 위해 로그인 실패 시
+  에러 코드(auth/user-not-found, auth/wrong-password 등)를 세분화하여 노출하지 않고,
+  무조건 단일 메시지로 통일하여 출력:
+  -> "이메일 또는 비밀번호가 올바르지 않습니다."
+
+[단계 3] 데이터 저장 위치 변경 및 개인 금고 격리
+- 기존: doc(db, 'pds_diary_data', 'main_workspace') [공용]
+- 변경: doc(db, 'users', user.uid) [개인 전용]
+- 저장 함수(saveData)에서 auth.currentUser 또는 window.currentUser를 검증한 후
+  본인의 고유 UID 문서에만 plans, tasks, executions, reflections를 JSON 구조로 저장.
+
+[단계 4] 서버 측 보안 규칙 설정 (Firestore Security Rules)
+- 클라이언트 코드 변조 및 콘솔 조작을 통한 부정 접근을 막기 위해 Firestore 콘솔에
+  서버 측 강제 보안 규칙을 배포:
+
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      match /users/{userId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /users/{userId}/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+
+- 동작 원리:
+  1) request.auth != null : 반드시 로그인된 상태여야 함 (비로그인 차단)
+  2) request.auth.uid == userId : 로그인된 사용자의 UID와 접근하려는 문서 경로의 UID가
+     일치할 때만 읽기/쓰기를 허가함 (타인 금고 침범 차단)
+
+[단계 5] 사용자 탈퇴(계정 삭제) 시 데이터 영구 파기 절차
+- 회원탈퇴 시 클라우드 데이터베이스에 개인정보 및 학습 기록이 남지 않도록
+  순차 처리(Sequential Async)를 보장:
+  1) deleteDoc(doc(db, 'users', user.uid)) -> Firestore 개인 금고 문서 선삭제
+  2) deleteUser(user) -> Firebase Auth 인증 계정 영구 삭제
+  (※ 주의: Auth 삭제를 먼저 진행하면 토큰이 무효화되어 Firestore 삭제가 403으로 거절되므로
+   반드시 DB 문서를 먼저 삭제하고 계정을 삭제함)
+
+
+4. 보안 거절 테스트 검증 결과 (카드 4 증빙)
+--------------------------------------------------------------------------------
+공격자 계정 B로 로그인한 상태에서 희생자 계정 A(UID: 5aOdta9HyGXfZsr9nYRkO9y6n602)의
+개인 금고에 브라우저 개발자 도구(F12) 콘솔을 통해 강제 접근 시도:
+
+1) 계정 B -> 계정 A 데이터 읽기(getDoc) 시도:
+   -> 결과: permission-denied (Missing or insufficient permissions) [403 차단 성공]
+
+2) 계정 B -> 계정 A 데이터 수정/덮어쓰기(setDoc) 시도:
+   -> 결과: permission-denied (Missing or insufficient permissions) [403 차단 성공]
+
+3) 계정 B -> 계정 A 데이터 삭제(deleteDoc) 시도:
+   -> 결과: permission-denied (Missing or insufficient permissions) [403 차단 성공]
+
+4) 비로그인 상태(signOut 직후) 접근 시도:
+   -> 결과: request.auth != null 규칙에 의해 permission-denied [403 차단 성공]
+
+
+5. 유지 관리 및 주의사항
+--------------------------------------------------------------------------------
+1) 브라우저 캐시 및 오버레이 버그 방지:
+   - 로그인 상태 전환 시 모달 오버레이는 단순 CSS class 토글 외에 반드시
+     인라인 스타일(style.display = 'none')과 CSS 속성(pointer-events-none)을
+     동시에 처리하여 본문 버튼 클릭 차단 현상을 방지함.
+2) 프론트엔드-백엔드 2중 방어선:
+   - 프론트엔드 UI 레벨에서 화면을 가리고 차단하는 것은 1차적 방어선이며,
+     핵심 보안은 클라우드 Firestore의 Security Rules에서 강제하는 서버 레벨 거절임.
+================================================================================
