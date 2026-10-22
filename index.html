@@ -35,7 +35,7 @@
     .container {
       max-width: 1200px; margin: 0 auto; min-height: 100vh;
       display: flex; flex-direction: column;
-      justify-content: center; padding: 20px; box-sizing: border-box;
+      justify-content: center; padding: 20px 20px 60px 20px; box-sizing: border-box;
     }
 
     header { margin-bottom: 2rem; text-align: center; height: 100px; }
@@ -60,7 +60,7 @@
       transition: opacity 1s;
     }
 
-    .main-content { display: flex; gap: 30px; align-items: stretch; }
+    .main-content { display: flex; gap: 30px; align-items: stretch; margin-bottom: 50px; }
     .left-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
     .right-panel { flex: 2; display: flex; gap: 15px; }
 
@@ -155,6 +155,157 @@
     .flip-card-back p { margin: 8px 0; font-size: 0.95rem; line-height: 1.5; color: #e0e6ed;}
     .flip-card-back strong { color: #b148d2; text-shadow: 0 0 5px rgba(177, 72, 210, 0.5); }
 
+    /* ========================================================
+       과제 8: 비공개 영역 스타일 (T08-C13 구분 기준)
+       ======================================================== */
+    .private-boundary {
+      margin-top: 40px;
+      padding: 30px;
+      border: 2px dashed #00e5ff;
+      border-radius: 16px;
+      background: rgba(10, 15, 30, 0.7);
+      box-shadow: 0 0 30px rgba(0, 229, 255, 0.15);
+      position: relative;
+    }
+
+    .private-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #000;
+      background: #00e5ff;
+      border-radius: 20px;
+      margin-bottom: 15px;
+      letter-spacing: 1px;
+    }
+
+    .private-header h2 {
+      font-size: 1.6rem;
+      color: #fff;
+      margin: 0 0 10px 0;
+    }
+
+    .private-header p {
+      color: #a0aec0;
+      margin: 0 0 25px 0;
+      font-size: 0.95rem;
+    }
+
+    /* 패스키 조작 컨트롤 바 */
+    .passkey-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-passkey {
+      padding: 12px 24px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-login {
+      background: #00e5ff;
+      color: #05050a;
+      border: none;
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+    }
+    .btn-login:hover { background: #66efff; transform: translateY(-2px); }
+
+    .btn-register {
+      background: rgba(177, 72, 210, 0.2);
+      color: #b148d2;
+      border: 2px solid #b148d2;
+    }
+    .btn-register:hover { background: #b148d2; color: #fff; transform: translateY(-2px); }
+
+    .btn-logout {
+      background: rgba(255, 0, 85, 0.15);
+      color: #ff0055;
+      border: 1px solid #ff0055;
+    }
+    .btn-logout:hover { background: #ff0055; color: #fff; }
+
+    .user-select {
+      background: #0a0d18;
+      color: #00e5ff;
+      border: 1px solid #00e5ff;
+      padding: 11px 16px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .auth-status-msg {
+      font-size: 0.9rem;
+      color: #ffaa00;
+      margin-left: auto;
+    }
+
+    /* 잠김 안내 화면 */
+    .vault-locked {
+      text-align: center;
+      padding: 40px 20px;
+      color: #718096;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    /* 비공개 데이터 카드 컨테이너 (T08-C14) */
+    .vault-unlocked {
+      display: none; /* 인증 전에는 절대 보이지 않음 */
+    }
+
+    .private-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .private-card {
+      background: rgba(20, 25, 45, 0.7);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .private-card h3 {
+      margin-top: 0;
+      color: #00e5ff;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .private-card p {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 0;
+    }
+
+    .disclaimer-note {
+      margin-top: 25px;
+      font-size: 0.8rem;
+      color: #64748b;
+      text-align: right;
+    }
+
     /* 영상 모달 */
     #video-modal {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -162,23 +313,18 @@
       align-items: center; justify-content: center; flex-direction: column;
     }
     
-    /* 💡 9:16 영상에 맞춰 모달창 폭과 스크롤 방지 설정 추가 */
     #video-modal .modal-content { 
       padding: 30px; text-align: center; 
-      max-width: 500px; /* 세로 영상이 예쁘게 담기도록 폭을 살짝 줄임 */
-      width: 90%; 
-      max-height: 90vh; /* 화면 높이를 넘어가지 않도록 강제 제한 */
+      max-width: 500px; width: 90%; 
+      max-height: 90vh; 
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       border: 2px solid rgba(0, 229, 255, 0.5);
       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 229, 255, 0.3);
     }
     #video-modal h2 { color: #00e5ff; margin-top: 0; margin-bottom: 20px;}
 
-    /* 💡 핵심 수정: 영상 높이를 제한하여 꽉 차지 않게 함 */
     video {
-      width: 100%; 
-      max-height: 55vh; /* 화면 전체 높이의 55% 까지만 커지도록 제한 */
-      object-fit: contain; /* 비율이 찌그러지지 않고 박스 안에 예쁘게 맞춤 */
+      width: 100%; max-height: 55vh; object-fit: contain; 
       border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       background-color: #000; outline: none;
     }
@@ -190,7 +336,6 @@
     }
     .close-btn:hover { background-color: #ff0055; color: white; box-shadow: 0 0 20px rgba(255, 0, 85, 0.6); }
 
-    /* 접근성 (T01-C22) */
     @media (prefers-reduced-motion: reduce) {
       body::before, body::after { animation: none; }
       .cyber-btn:hover::before { animation: none; content: none; }
@@ -203,6 +348,9 @@
 <body>
 
   <div class="container">
+    <!-- ========================================================
+         1. 기존 공개 영역 (누구나 열람 가능 / 1번 과제 유지)
+         ======================================================== -->
     <header>
       <div class="typing-container">
         <h1 class="typing-text type-animation" id="main-title">나는 고민이 생기면 먼저 움직이는 사람입니다.</h1>
@@ -272,8 +420,58 @@
         </article>
       </section>
     </main>
+
+    <!-- ========================================================
+         2. 과제 8: 패스키 비공개 영역 (T08-C13, T08-C14)
+         비밀번호 입력칸 없음 (T08-C35)
+         ======================================================== -->
+    <section class="private-boundary glass-panel" id="private-section">
+      <span class="private-badge">PASSKEY PROTECTED VAULT</span>
+      <div class="private-header">
+        <h2>🔒 비공개 연구실 메모</h2>
+        <p>이곳은 기기 패스키(WebAuthn)로 본인 인증을 통과한 사용자만 열람할 수 있는 비공개 구역입니다.</p>
+      </div>
+
+      <!-- 계정 선택 및 패스키 동작 컨트롤 (T08-C36 계정 2개 지원) -->
+      <div class="passkey-controls">
+        <label for="account-select" style="font-weight: bold; color: #a0aec0;">계정 선택:</label>
+        <select id="account-select" class="user-select">
+          <option value="user_sangjun">박상준 (주 계정)</option>
+          <option value="user_guest_b">게스트 B (테스트 계정)</option>
+        </select>
+
+        <button id="btn-passkey-register" class="btn-passkey btn-register">➕ 새 패스키 등록</button>
+        <button id="btn-passkey-login" class="btn-passkey btn-login">🔑 패스키로 로그인</button>
+        <button id="btn-passkey-logout" class="btn-passkey btn-logout" style="display: none;">🚪 로그아웃</button>
+
+        <span id="auth-status" class="auth-status-msg">상태: 🔒 잠김 (인증 필요)</span>
+      </div>
+
+      <!-- 등록된 패스키 목록 (카드 4 대응: 기기별 패스키 관리) -->
+      <div id="passkey-list-box" style="margin-bottom: 20px; font-size: 0.85rem; color: #94a3b8; display: none;">
+        <strong>등록된 패스키:</strong> <span id="passkey-items">없음</span>
+      </div>
+
+      <!-- 잠김 상태 안내 (인증 전) -->
+      <div class="vault-locked" id="vault-locked-view">
+        <p style="font-size: 1.2rem; margin: 0 0 10px 0;">🛡️ 데이터가 암호화 보호 중입니다</p>
+        <p style="font-size: 0.9rem; margin: 0;">상단의 <strong>[패스키로 로그인]</strong> 버튼을 눌러 기기 생체인증/PIN으로 인증해 주세요.</p>
+      </div>
+
+      <!-- 잠금 해제 상태 화면 (인증 성공 시 동적 렌더링 / T08-C14 비공개 항목 3개) -->
+      <div class="vault-unlocked" id="vault-unlocked-view">
+        <div class="private-grid" id="private-cards-container">
+          <!-- 패스키 인증 성공 후에만 동적으로 카드가 꽂힙니다 -->
+        </div>
+      </div>
+
+      <div class="disclaimer-note">
+        ※ 본 비공개 구역의 모든 데이터는 과제 평가용으로 생성된 가상 메모이며, 실제 개인정보는 포함되어 있지 않습니다. (T08-C12)
+      </div>
+    </section>
   </div>
 
+  <!-- 영상 모달 -->
   <div id="video-modal" aria-hidden="true" role="dialog">
     <div class="modal-content glass-panel">
       <h2>직접 만든 AI 영상</h2>
@@ -281,12 +479,14 @@
         <source src="my_video.mp4" type="video/mp4">
         브라우저가 동영상 재생을 지원하지 않습니다.
       </video>
-      <!-- 불필요한 줄바꿈 <br> 제거하고 간격은 CSS(margin-top)로 처리했습니다. -->
       <button class="close-btn" id="close-modal-btn">닫기</button>
     </div>
   </div>
 
   <script>
+    /* ========================================================
+       1. 과제 1 기존 인터랙션 스크립트 (원형 유지)
+       ======================================================== */
     const cards = document.querySelectorAll('.card-item');
     const mainTitle = document.getElementById('main-title');
     const subTitle = document.getElementById('sub-title');
@@ -334,6 +534,17 @@
     videoBtn.addEventListener('click', () => { modal.style.display = 'flex'; closeBtn.focus(); });
     closeBtn.addEventListener('click', () => { modal.style.display = 'none'; videoPlayer.pause(); videoBtn.focus(); });
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.style.display === 'flex') { closeBtn.click(); }});
+
+    /* ========================================================
+       2. 카드 1 기본 상태 제어 UI
+       ======================================================== */
+    const accountSelect = document.getElementById('account-select');
+    const authStatus = document.getElementById('auth-status');
+    const lockedView = document.getElementById('vault-locked-view');
+    const unlockedView = document.getElementById('vault-unlocked-view');
+    const btnRegister = document.getElementById('btn-passkey-register');
+    const btnLogin = document.getElementById('btn-passkey-login');
+    const btnLogout = document.getElementById('btn-passkey-logout');
   </script>
 </body>
 </html>
